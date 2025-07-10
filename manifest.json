@@ -3,6 +3,7 @@
   "name": "manaba+R 超絶便利にする拡張機能",
   "version": "1.0",
   "description": "manaba+Rのホーム画面に未提出課題を集約表示します。",
+  "permissions": ["storage"],
 
   "content_scripts": [
     {

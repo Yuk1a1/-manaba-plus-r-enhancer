@@ -38,7 +38,7 @@ function renderTasks(tasks, boxElement) {
 
   if (tasks.length === 0) {
     const noTaskMessage = document.createElement('p');
-    noTaskMessage.textContent = '現在、提出すべき課題はありません。';
+    noTaskMessage.textContent = '現在、表示する課題はありません。';
     boxElement.appendChild(noTaskMessage);
     return;
   }
@@ -51,12 +51,24 @@ function renderTasks(tasks, boxElement) {
     taskItem.style.marginBottom = '12px';
     taskItem.style.paddingBottom = '8px';
     taskItem.style.borderBottom = '1px solid #eee';
+    taskItem.dataset.taskUrl = task.url; // 要素にURLを紐づけておく
 
-    // --- ★非表示ボタンを追加 ---
     const hideButton = document.createElement('button');
     hideButton.textContent = '非表示';
     hideButton.className = 'fuyuki-hide-button';
-    // hideButton.dataset.taskUrl = task.url; // 後で使うデータを埋め込んでおく
+    
+    // --- ★非表示ボタンのクリック処理 ---
+    hideButton.addEventListener('click', async () => {
+      const urlToHide = task.url;
+      const result = await chrome.storage.local.get(['hiddenTasks']);
+      const hiddenTasks = result.hiddenTasks || [];
+      if (!hiddenTasks.includes(urlToHide)) {
+        hiddenTasks.push(urlToHide);
+        await chrome.storage.local.set({ hiddenTasks: hiddenTasks });
+        // 即座に画面から消す
+        taskItem.style.display = 'none';
+      }
+    });
     
     const titleLink = document.createElement('a');
     titleLink.href = task.url;
@@ -66,7 +78,7 @@ function renderTasks(tasks, boxElement) {
     titleLink.style.textDecoration = 'none';
     titleLink.style.fontWeight = 'bold';
     
-    taskItem.appendChild(hideButton); // ボタンを先に追加して右寄せ
+    taskItem.appendChild(hideButton);
     taskItem.appendChild(titleLink);
 
     if (task.deadline !== 'なし') {
@@ -89,7 +101,7 @@ function renderTasks(tasks, boxElement) {
 // ----------------------------------------------------
 // ページの読み込みが完了したときに全体処理を実行 (★変更あり)
 // ----------------------------------------------------
-window.addEventListener('load', async () => {
+async function main() {
   if (document.body.classList.contains('fuyuki-layout-applied')) {
     return;
   }
@@ -110,6 +122,7 @@ window.addEventListener('load', async () => {
   mainContainer.appendChild(kadaiBox);
   document.body.classList.add('fuyuki-layout-applied');
 
+  // --- 機能実装 ---
   const taskPromises = [
     fetchTasks('/ct/home_summary_report', 'レポート'),
     fetchTasks('/ct/home_summary_query', '小テスト'),
@@ -117,17 +130,30 @@ window.addEventListener('load', async () => {
   ];
   const allTasksRaw = (await Promise.all(taskPromises)).flat();
   
-  allTasksRaw.sort((a, b) => {
+  // ★非表示リストを取得してフィルタリング
+  const storageResult = await chrome.storage.local.get(['hiddenTasks']);
+  const hiddenTasks = storageResult.hiddenTasks || [];
+  const visibleTasks = allTasksRaw.filter(task => !hiddenTasks.includes(task.url));
+  
+  visibleTasks.sort((a, b) => {
     if (a.deadline === 'なし') return 1;
     if (b.deadline === 'なし') return -1;
     return new Date(a.deadline) - new Date(b.deadline);
   });
 
-  renderTasks(allTasksRaw, kadaiBox);
+  renderTasks(visibleTasks, kadaiBox);
   
-  // --- ★再表示リンクを追加 ---
   const restoreLink = document.createElement('a');
   restoreLink.textContent = '非表示にした課題を全て再表示';
   restoreLink.className = 'fuyuki-restore-link';
+  
+  // --- ★再表示リンクのクリック処理 ---
+  restoreLink.addEventListener('click', async () => {
+    await chrome.storage.local.remove('hiddenTasks');
+    // 画面をリロードして全てを再描画するのが最も確実
+    window.location.reload();
+  });
   kadaiBox.appendChild(restoreLink);
-});
+}
+
+window.addEventListener('load', main);
