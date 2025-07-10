@@ -11,7 +11,6 @@ async function fetchTasks(url, type) {
     rows.forEach((row, index) => {
       if (index === 0) return;
       const titleElement = row.querySelector('td:nth-child(1) a');
-      // 締切がない場合も考慮する
       const deadlineElement = row.querySelector('td:nth-child(3)');
       if (titleElement) {
         tasks.push({
@@ -33,7 +32,6 @@ async function fetchTasks(url, type) {
  * 取得した課題データを画面に表示する
  */
 function renderTasks(tasks, boxElement) {
-  // 古い内容をクリア
   while (boxElement.children.length > 1) {
       boxElement.removeChild(boxElement.lastChild);
   }
@@ -44,6 +42,9 @@ function renderTasks(tasks, boxElement) {
     boxElement.appendChild(noTaskMessage);
     return;
   }
+  
+  const now = new Date();
+  const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
 
   tasks.forEach(task => {
     const taskItem = document.createElement('div');
@@ -59,18 +60,24 @@ function renderTasks(tasks, boxElement) {
     titleLink.style.textDecoration = 'none';
     titleLink.style.fontWeight = 'bold';
     
-    // 締切がある場合のみ、締切情報を表示する
+    taskItem.appendChild(titleLink);
+
     if (task.deadline !== 'なし') {
         const deadlineText = document.createElement('p');
         deadlineText.textContent = `締切: ${task.deadline}`;
         deadlineText.style.margin = '4px 0 0 0';
         deadlineText.style.fontSize = '12px';
-        // ハイライト機能は次のステップで追加します
+        
+        // --- ★ハイライト機能のロジック★ ---
+        const deadlineDate = new Date(task.deadline);
+        const diff = deadlineDate - now;
+        if (diff > 0 && diff < twentyFourHoursInMillis) {
+            deadlineText.classList.add('fuyuki-deadline-urgent');
+        }
+
         taskItem.appendChild(deadlineText);
     }
 
-    taskItem.appendChild(titleLink);
-    // 順番を変更：タイトルが先、締切が後
     boxElement.appendChild(taskItem);
   });
 }
@@ -86,7 +93,6 @@ window.addEventListener('load', async () => {
   const originalContainer = document.getElementById('container');
   if (!originalContainer) { return; }
 
-  // レイアウト構築部分は、安定している今のものを維持
   const mainContainer = document.createElement('div');
   mainContainer.className = 'fuyuki-main-container';
   const contentArea = document.createElement('div');
@@ -100,8 +106,6 @@ window.addEventListener('load', async () => {
   mainContainer.appendChild(kadaiBox);
   document.body.classList.add('fuyuki-layout-applied');
 
-  // --- 機能追加部分 ---
-  // 1. 全ての課題取得処理を並行して実行
   const taskPromises = [
     fetchTasks('/ct/home_summary_report', 'レポート'),
     fetchTasks('/ct/home_summary_query', '小テスト'),
@@ -109,13 +113,11 @@ window.addEventListener('load', async () => {
   ];
   const allTasksRaw = (await Promise.all(taskPromises)).flat();
   
-  // 2. 課題を締切日時でソートする
   allTasksRaw.sort((a, b) => {
     if (a.deadline === 'なし') return 1;
     if (b.deadline === 'なし') return -1;
     return new Date(a.deadline) - new Date(b.deadline);
   });
 
-  // 3. 画面に表示する
   renderTasks(allTasksRaw, kadaiBox);
 });

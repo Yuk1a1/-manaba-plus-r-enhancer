@@ -27,3 +27,8 @@
   border-bottom: 2px solid #007b92;
   padding-bottom: 8px;
 }
+/* 締切ハイライト用のスタイル */
+.fuyuki-deadline-urgent {
+  color: #d93025 !important;
+  font-weight: bold !important;
+}
