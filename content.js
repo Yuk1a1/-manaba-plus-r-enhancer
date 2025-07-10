@@ -1,6 +1,6 @@
-/**
- * 3種類の課題をまとめて取得・処理するための汎用関数
- */
+// ----------------------------------------------------
+// 各種課題を取得する非同期関数群 (変更なし)
+// ----------------------------------------------------
 async function fetchTasks(url, type) {
   try {
     const response = await fetch(url);
@@ -28,12 +28,12 @@ async function fetchTasks(url, type) {
   }
 }
 
-/**
- * 取得した課題データを画面に表示する
- */
+// ----------------------------------------------------
+// 課題データを画面に表示する関数 (★変更あり)
+// ----------------------------------------------------
 function renderTasks(tasks, boxElement) {
   while (boxElement.children.length > 1) {
-      boxElement.removeChild(boxElement.lastChild);
+    boxElement.removeChild(boxElement.lastChild);
   }
 
   if (tasks.length === 0) {
@@ -52,6 +52,12 @@ function renderTasks(tasks, boxElement) {
     taskItem.style.paddingBottom = '8px';
     taskItem.style.borderBottom = '1px solid #eee';
 
+    // --- ★非表示ボタンを追加 ---
+    const hideButton = document.createElement('button');
+    hideButton.textContent = '非表示';
+    hideButton.className = 'fuyuki-hide-button';
+    // hideButton.dataset.taskUrl = task.url; // 後で使うデータを埋め込んでおく
+    
     const titleLink = document.createElement('a');
     titleLink.href = task.url;
     titleLink.textContent = `【${task.type}】${task.title}`;
@@ -60,31 +66,29 @@ function renderTasks(tasks, boxElement) {
     titleLink.style.textDecoration = 'none';
     titleLink.style.fontWeight = 'bold';
     
+    taskItem.appendChild(hideButton); // ボタンを先に追加して右寄せ
     taskItem.appendChild(titleLink);
 
     if (task.deadline !== 'なし') {
-        const deadlineText = document.createElement('p');
-        deadlineText.textContent = `締切: ${task.deadline}`;
-        deadlineText.style.margin = '4px 0 0 0';
-        deadlineText.style.fontSize = '12px';
-        
-        // --- ★ハイライト機能のロジック★ ---
-        const deadlineDate = new Date(task.deadline);
-        const diff = deadlineDate - now;
-        if (diff > 0 && diff < twentyFourHoursInMillis) {
-            deadlineText.classList.add('fuyuki-deadline-urgent');
-        }
-
-        taskItem.appendChild(deadlineText);
+      const deadlineText = document.createElement('p');
+      deadlineText.textContent = `締切: ${task.deadline}`;
+      deadlineText.style.margin = '4px 0 0 0';
+      deadlineText.style.fontSize = '12px';
+      
+      const deadlineDate = new Date(task.deadline);
+      const diff = deadlineDate - now;
+      if (diff > 0 && diff < twentyFourHoursInMillis) {
+        deadlineText.classList.add('fuyuki-deadline-urgent');
+      }
+      taskItem.appendChild(deadlineText);
     }
-
     boxElement.appendChild(taskItem);
   });
 }
 
-/**
- * メイン処理
- */
+// ----------------------------------------------------
+// ページの読み込みが完了したときに全体処理を実行 (★変更あり)
+// ----------------------------------------------------
 window.addEventListener('load', async () => {
   if (document.body.classList.contains('fuyuki-layout-applied')) {
     return;
@@ -120,4 +124,10 @@ window.addEventListener('load', async () => {
   });
 
   renderTasks(allTasksRaw, kadaiBox);
+  
+  // --- ★再表示リンクを追加 ---
+  const restoreLink = document.createElement('a');
+  restoreLink.textContent = '非表示にした課題を全て再表示';
+  restoreLink.className = 'fuyuki-restore-link';
+  kadaiBox.appendChild(restoreLink);
 });
