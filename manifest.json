@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "manaba+R 超絶便利にする拡張機能",
+  "version": "1.0",
+  "description": "manaba+Rのホーム画面に未提出課題を集約表示します。",
+
+  "content_scripts": [
+    {
+      "matches": ["https://ct.ritsumei.ac.jp/ct/home*"],
+      "css": ["style.css"],
+      "js": ["content.js"]
+    }
+  ]
+}

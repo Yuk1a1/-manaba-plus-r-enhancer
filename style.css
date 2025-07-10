@@ -1,0 +1,29 @@
+/* ページ全体のレイアウトを定義するコンテナ */
+.fuyuki-main-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px; /* コンテンツと課題ボックスの間の隙間 */
+}
+
+/* 既存のコンテンツを囲むエリア */
+.fuyuki-content-area {
+  flex: 1; /* 利用可能なスペースをすべて使う */
+  min-width: 0; /* flexアイテムの縮小を許可 */
+}
+
+/* 未提出課題BOX */
+.fuyuki-kadai-box {
+  width: 380px; /* BOXの幅を固定 */
+  flex-shrink: 0; /* BOXが縮まないようにする */
+  border: 1px solid #ccc;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px; /* 角を丸くする */
+}
+
+.fuyuki-kadai-box h2 {
+  margin-top: 0;
+  font-size: 18px;
+  border-bottom: 2px solid #007b92;
+  padding-bottom: 8px;
+}
