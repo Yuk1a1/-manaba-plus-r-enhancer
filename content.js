@@ -1,159 +1,269 @@
-// ----------------------------------------------------
-// 各種課題を取得する非同期関数群 (変更なし)
-// ----------------------------------------------------
-async function fetchTasks(url, type) {
-  try {
+/**
+ * 右カラムを生成し、未提出課題リストとカレンダーのコンテナを配置する
+ * @param {HTMLElement} parentElement - 右カラムを追加する親要素
+ * @returns {object} - 未提出課題リストを描画するコンテナとカレンダーを描画するコンテナ
+ */
+function createRightColumn(parentElement) {
+    const rightColumn = document.createElement('div');
+    rightColumn.id = 'right-column';
+
+    const kadaiBox = document.createElement('div');
+    kadaiBox.id = 'kadai-box';
+    kadaiBox.className = 'content-box';
+    const kadaiTitle = document.createElement('h2');
+    kadaiTitle.className = 'box-title';
+    kadaiTitle.textContent = '未提出課題リスト';
+    kadaiBox.appendChild(kadaiTitle);
+
+    const calendarBox = document.createElement('div');
+    calendarBox.id = 'calendar-box';
+    calendarBox.className = 'content-box';
+    const calendarTitle = document.createElement('h2');
+    calendarTitle.className = 'box-title';
+    calendarTitle.textContent = '締切カレンダー';
+    calendarBox.appendChild(calendarTitle);
+
+    rightColumn.appendChild(kadaiBox);
+    rightColumn.appendChild(calendarBox);
+    parentElement.appendChild(rightColumn);
+
+    return { kadaiContainer: kadaiBox, calendarContainer: calendarBox };
+}
+
+
+/**
+ * 課題の種類に応じてCSSクラスを返す
+ * @param {string} taskType - 課題の種類（レポート, 小テスト, アンケート）
+ * @returns {string} - 対応するCSSクラス名
+ */
+function getTaskTypeClass(taskType) {
+    switch (taskType) {
+        case 'レポート':
+            return 'task-report';
+        case '小テスト':
+            return 'task-quiz';
+        case 'アンケート':
+            return 'task-survey';
+        default:
+            return 'task-other';
+    }
+}
+
+/**
+ * 課題データをHTMLに変換してリスト表示する
+ * @param {Array<object>} tasks - 表示する課題の配列
+ * @param {HTMLElement} container - 課題リストを追加するコンテナ要素
+ */
+function displayTasks(tasks, container) {
+    const list = document.createElement('ul');
+    list.id = 'task-list';
+
+    tasks.forEach(task => {
+        if (hiddenTasks.includes(task.id)) {
+            return;
+        }
+
+        const listItem = document.createElement('li');
+        listItem.dataset.taskId = task.id;
+
+        const now = new Date();
+        const deadline = task.deadlineDate;
+        const isUrgent = deadline && (deadline.getTime() - now.getTime()) < 24 * 60 * 60 * 1000;
+        if (isUrgent) {
+            listItem.classList.add('urgent');
+        }
+
+        const typeSpan = document.createElement('span');
+        typeSpan.className = `task-type ${getTaskTypeClass(task.taskType)}`;
+        typeSpan.textContent = task.taskType;
+
+        const titleLink = document.createElement('a');
+        titleLink.href = task.link;
+        titleLink.textContent = task.title;
+        titleLink.target = '_blank';
+
+        const deadlineSpan = document.createElement('span');
+        deadlineSpan.className = 'deadline';
+        deadlineSpan.textContent = task.deadline;
+
+        const hideButton = document.createElement('button');
+        hideButton.className = 'hide-button';
+        hideButton.textContent = '×';
+        hideButton.title = 'この課題を非表示にする';
+        hideButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideTask(task.id);
+        });
+        
+        listItem.appendChild(typeSpan);
+        listItem.appendChild(titleLink);
+        listItem.appendChild(deadlineSpan);
+        listItem.appendChild(hideButton);
+
+        list.appendChild(listItem);
+    });
+    
+    const existingList = container.querySelector('#task-list');
+    if (existingList) {
+        existingList.remove();
+    }
+    container.appendChild(list);
+}
+
+
+/**
+ * 指定されたURLからHTMLを取得し、DOMとしてパースする
+ * @param {string} url - 取得先のURL
+ * @returns {Promise<Document>} - パースされたHTMLドキュメント
+ */
+async function fetchAndParse(url) {
     const response = await fetch(url);
     const text = await response.text();
-    const doc = new DOMParser().parseFromString(text, 'text/html');
-    const rows = doc.querySelectorAll('div.contentbody-l table tbody tr');
-    const tasks = [];
-    rows.forEach((row, index) => {
-      if (index === 0) return;
-      const titleElement = row.querySelector('td:nth-child(1) a');
-      const deadlineElement = row.querySelector('td:nth-child(3)');
-      if (titleElement) {
-        tasks.push({
-          title: titleElement.innerText.trim(),
-          deadline: (deadlineElement && deadlineElement.innerText.trim()) ? deadlineElement.innerText.trim() : 'なし',
-          url: titleElement.href,
-          type: type
-        });
-      }
-    });
-    return tasks;
-  } catch (error) {
-    console.error(`${type}情報の取得エラー:`, error);
-    return [];
-  }
+    return new DOMParser().parseFromString(text, 'text/html');
 }
 
-// ----------------------------------------------------
-// 課題データを画面に表示する関数 (★変更あり)
-// ----------------------------------------------------
-function renderTasks(tasks, boxElement) {
-  while (boxElement.children.length > 1) {
-    boxElement.removeChild(boxElement.lastChild);
-  }
+/**
+ * 3種類の課題（レポート・小テスト・アンケート）をすべて取得する
+ * @returns {Promise<Array<object>>} - 全ての未提出課題の配列
+ */
+async function fetchAllTasks() {
+    const taskDefinitions = [
+        { type: 'レポート', url: '/ct/home_summary_report' },
+        { type: '小テスト', url: '/ct/home_summary_query' },
+        { type: 'アンケート', url: '/ct/home_summary_survey' } 
+    ];
 
-  if (tasks.length === 0) {
-    const noTaskMessage = document.createElement('p');
-    noTaskMessage.textContent = '現在、表示する課題はありません。';
-    boxElement.appendChild(noTaskMessage);
-    return;
-  }
-  
-  const now = new Date();
-  const twentyFourHoursInMillis = 24 * 60 * 60 * 1000;
+    let allTasks = [];
 
-  tasks.forEach(task => {
-    const taskItem = document.createElement('div');
-    taskItem.style.marginBottom = '12px';
-    taskItem.style.paddingBottom = '8px';
-    taskItem.style.borderBottom = '1px solid #eee';
-    taskItem.dataset.taskUrl = task.url; // 要素にURLを紐づけておく
+    for (const def of taskDefinitions) {
+        try {
+            const doc = await fetchAndParse(def.url);
+            // ★★★ 取得ロジックをより堅牢なものに修正 ★★★
+            const rows = doc.querySelectorAll('.contentbody-l tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                // td要素が3つ以上ある行のみを、課題データ行とみなす
+                if (cells.length < 3) return; 
 
-    const hideButton = document.createElement('button');
-    hideButton.textContent = '非表示';
-    hideButton.className = 'fuyuki-hide-button';
-    
-    // --- ★非表示ボタンのクリック処理 ---
-    hideButton.addEventListener('click', async () => {
-      const urlToHide = task.url;
-      const result = await chrome.storage.local.get(['hiddenTasks']);
-      const hiddenTasks = result.hiddenTasks || [];
-      if (!hiddenTasks.includes(urlToHide)) {
-        hiddenTasks.push(urlToHide);
-        await chrome.storage.local.set({ hiddenTasks: hiddenTasks });
-        // 即座に画面から消す
-        taskItem.style.display = 'none';
-      }
-    });
-    
-    const titleLink = document.createElement('a');
-    titleLink.href = task.url;
-    titleLink.textContent = `【${task.type}】${task.title}`;
-    titleLink.target = '_blank';
-    titleLink.style.color = '#005ab3';
-    titleLink.style.textDecoration = 'none';
-    titleLink.style.fontWeight = 'bold';
-    
-    taskItem.appendChild(hideButton);
-    taskItem.appendChild(titleLink);
+                const titleElement = cells[0].querySelector('a');
+                // aタグがなければスキップ
+                if (!titleElement) return;
 
-    if (task.deadline !== 'なし') {
-      const deadlineText = document.createElement('p');
-      deadlineText.textContent = `締切: ${task.deadline}`;
-      deadlineText.style.margin = '4px 0 0 0';
-      deadlineText.style.fontSize = '12px';
-      
-      const deadlineDate = new Date(task.deadline);
-      const diff = deadlineDate - now;
-      if (diff > 0 && diff < twentyFourHoursInMillis) {
-        deadlineText.classList.add('fuyuki-deadline-urgent');
-      }
-      taskItem.appendChild(deadlineText);
+                const title = titleElement.innerText.trim();
+                const link = titleElement.href;
+                const deadline = cells[2].innerText.trim();
+                
+                let deadlineDate = null;
+                if (deadline && deadline !== '締切なし') {
+                    const match = deadline.match(/(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
+                    if (match) {
+                        deadlineDate = new Date(match[1], match[2] - 1, match[3], match[4], match[5]);
+                    }
+                }
+
+                allTasks.push({
+                    id: `${def.type}-${link}-${title}`,
+                    taskType: def.type,
+                    title,
+                    link,
+                    deadline,
+                    deadlineDate
+                });
+            });
+        } catch (error) {
+            console.error(`${def.type}の取得に失敗しました:`, error);
+        }
     }
-    boxElement.appendChild(taskItem);
-  });
+    return allTasks;
 }
 
-// ----------------------------------------------------
-// ページの読み込みが完了したときに全体処理を実行 (★変更あり)
-// ----------------------------------------------------
-async function main() {
-  if (document.body.classList.contains('fuyuki-layout-applied')) {
-    return;
-  }
+/**
+ * 課題を締切日時でソートする（締切なしは最後尾）
+ * @param {Array<object>} tasks - ソート対象の課題配列
+ */
+function sortTasks(tasks) {
+    tasks.sort((a, b) => {
+        if (!a.deadlineDate && !b.deadlineDate) return 0;
+        if (!a.deadlineDate) return 1;
+        if (!b.deadlineDate) return -1;
+        return a.deadlineDate - b.deadlineDate;
+    });
+}
 
-  const originalContainer = document.getElementById('container');
-  if (!originalContainer) { return; }
+/**
+ * 課題を非表示にし、その状態を永続化する
+ * @param {string} taskId - 非表示にする課題のID
+ */
+function hideTask(taskId) {
+    if (!hiddenTasks.includes(taskId)) {
+        hiddenTasks.push(taskId);
+        chrome.storage.local.set({ hiddenTasks: hiddenTasks }, () => {
+            const taskElement = document.querySelector(`li[data-task-id="${CSS.escape(taskId)}"]`);
+            if (taskElement) {
+                taskElement.remove();
+            }
+        });
+    }
+}
 
-  const mainContainer = document.createElement('div');
-  mainContainer.className = 'fuyuki-main-container';
-  const contentArea = document.createElement('div');
-  contentArea.className = 'fuyuki-content-area';
-  const kadaiBox = document.createElement('div');
-  kadaiBox.className = 'fuyuki-kadai-box';
-  kadaiBox.innerHTML = '<h2>未提出課題BOX</h2>';
-  originalContainer.parentNode.insertBefore(mainContainer, originalContainer);
-  contentArea.appendChild(originalContainer);
-  mainContainer.appendChild(contentArea);
-  mainContainer.appendChild(kadaiBox);
-  document.body.classList.add('fuyuki-layout-applied');
-
-  // --- 機能実装 ---
-  const taskPromises = [
-    fetchTasks('/ct/home_summary_report', 'レポート'),
-    fetchTasks('/ct/home_summary_query', '小テスト'),
-    fetchTasks('/ct/home_summary_survey', 'アンケート')
-  ];
-  const allTasksRaw = (await Promise.all(taskPromises)).flat();
-  
-  // ★非表示リストを取得してフィルタリング
-  const storageResult = await chrome.storage.local.get(['hiddenTasks']);
-  const hiddenTasks = storageResult.hiddenTasks || [];
-  const visibleTasks = allTasksRaw.filter(task => !hiddenTasks.includes(task.url));
-  
-  visibleTasks.sort((a, b) => {
-    if (a.deadline === 'なし') return 1;
-    if (b.deadline === 'なし') return -1;
-    return new Date(a.deadline) - new Date(b.deadline);
-  });
-
-  renderTasks(visibleTasks, kadaiBox);
-  
-  const restoreLink = document.createElement('a');
-  restoreLink.textContent = '非表示にした課題を全て再表示';
-  restoreLink.className = 'fuyuki-restore-link';
-  
-  // --- ★再表示リンクのクリック処理 ---
-  restoreLink.addEventListener('click', async () => {
+/**
+ * 全ての非表示設定を解除し、リストを再描画する
+ */
+async function resetHiddenTasks() {
     await chrome.storage.local.remove('hiddenTasks');
-    // 画面をリロードして全てを再描画するのが最も確実
-    window.location.reload();
-  });
-  kadaiBox.appendChild(restoreLink);
+    hiddenTasks = [];
+    
+    const kadaiContainer = document.getElementById('kadai-box');
+    if (!kadaiContainer) return;
+    
+    const oldList = kadaiContainer.querySelector('#task-list');
+    if(oldList) oldList.remove();
+    const oldButton = kadaiContainer.querySelector('#reset-hidden-tasks');
+    if(oldButton) oldButton.remove();
+
+    mainProcess(kadaiContainer);
 }
 
-window.addEventListener('load', main);
+// グローバル変数として非表示タスクIDのリストを保持
+let hiddenTasks = [];
+
+/**
+ * 課題取得から表示までの一連の処理
+ * @param {HTMLElement} kadaiContainer - 課題リストを表示するコンテナ
+ */
+async function mainProcess(kadaiContainer) {
+    const data = await chrome.storage.local.get('hiddenTasks');
+    hiddenTasks = data.hiddenTasks || [];
+    
+    const allTasks = await fetchAllTasks();
+    sortTasks(allTasks);
+    displayTasks(allTasks, kadaiContainer);
+
+    if (!kadaiContainer.querySelector('#reset-hidden-tasks')) {
+        const resetButton = document.createElement('button');
+        resetButton.id = 'reset-hidden-tasks';
+        resetButton.textContent = '非表示の課題を全て再表示';
+        resetButton.addEventListener('click', resetHiddenTasks);
+        kadaiContainer.appendChild(resetButton);
+    }
+}
+
+
+/**
+ * メインの初期化処理
+ */
+async function initialize() {
+    if (document.body.classList.contains('layout-initialized')) {
+        return;
+    }
+    document.body.classList.add('layout-initialized');
+
+    const body = document.body;
+    body.classList.add('custom-layout');
+    
+    const { kadaiContainer } = createRightColumn(body);
+
+    mainProcess(kadaiContainer);
+}
+
+window.addEventListener('load', initialize);

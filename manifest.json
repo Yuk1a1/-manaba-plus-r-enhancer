@@ -1,9 +1,13 @@
 {
   "manifest_version": 3,
   "name": "manaba+R 超絶便利にする拡張機能",
-  "version": "1.0",
-  "description": "manaba+Rのホーム画面に未提出課題を集約表示します。",
+  "version": "2.0",
+  "description": "manaba+Rのホーム画面に未提出課題とカレンダーを集約表示します。",
   "permissions": ["storage"],
+
+  "host_permissions": [
+    "https://ct.ritsumei.ac.jp/*"
+  ],
 
   "content_scripts": [
     {

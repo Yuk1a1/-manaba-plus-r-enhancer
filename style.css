@@ -1,61 +1,154 @@
-/* ページ全体のレイアウトを定義するコンテナ */
-.fuyuki-main-container {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px; /* コンテンツと課題ボックスの間の隙間 */
+/* 既存のレイアウトをFlexboxに変更 */
+body.custom-layout {
+    display: flex;
+    justify-content: center;
 }
 
-/* 既存のコンテンツを囲むエリア */
-.fuyuki-content-area {
-  flex: 1; /* 利用可能なスペースをすべて使う */
-  min-width: 0; /* flexアイテムの縮小を許可 */
+/* メインコンテンツ（左カラム）の幅を調整 */
+body.custom-layout #container {
+    order: 1; /* 左側に配置 */
+    width: 65%;
+    margin: 0;
+    padding: 20px;
 }
 
-/* 未提出課題BOX */
-.fuyuki-kadai-box {
-  width: 380px; /* BOXの幅を固定 */
-  flex-shrink: 0; /* BOXが縮まないようにする */
-  border: 1px solid #ccc;
-  padding: 16px;
-  background-color: #f9f9f9;
-  border-radius: 8px; /* 角を丸くする */
+/* --- 右カラム全体のコンテナ --- */
+#right-column {
+    order: 2; /* 右側に配置 */
+    width: 35%;
+    min-width: 400px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 95vh;
 }
 
-.fuyuki-kadai-box h2 {
-  margin-top: 0;
-  font-size: 18px;
-  border-bottom: 2px solid #007b92;
-  padding-bottom: 8px;
-}
-/* 締切ハイライト用のスタイル */
-.fuyuki-deadline-urgent {
-  color: #d93025 !important;
-  font-weight: bold !important;
-}
-/* 非表示ボタンのスタイル */
-.fuyuki-hide-button {
-  background-color: #7f8c8d;
-  color: white;
-  border: none;
-  padding: 2px 8px;
-  font-size: 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 8px;
-  float: right; /* 右寄せにする */
+/* --- BOX共通のスタイル --- */
+.content-box {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
-.fuyuki-hide-button:hover {
-  background-color: #95a5a6;
+.box-title {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
+    flex-shrink: 0; /* タイトルは縮まない */
 }
 
-/* 非表示を戻すリンクのスタイル */
-.fuyuki-restore-link {
-  display: block;
-  margin-top: 20px;
-  text-align: center;
-  font-size: 12px;
-  color: #3498db;
-  cursor: pointer;
-  text-decoration: underline;
+/* --- 未提出課題BOXのスタイル --- */
+#kadai-box {
+    flex: 1; /* 高さを均等に分ける */
+    /* ★変更：BOX自体のスクロールは不要なので削除 */
+}
+
+/* --- カレンダーBOXのスタイル --- */
+#calendar-box {
+    flex: 1; /* 高さを均等に分ける */
+}
+
+/* --- 課題リスト自体のスタイル (★ここが重要) --- */
+#task-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    flex: 1; /* ★追加：利用可能なスペースを全て使うようにする */
+    overflow-y: auto; /* ★追加：内容がはみ出たら、このリスト自体をスクロールさせる */
+    min-height: 0; /* ★追加：flexアイテムが正しく縮むために必要 */
+}
+
+#task-list li {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+#task-list li:last-child {
+    border-bottom: none;
+}
+
+#task-list li.urgent {
+    background-color: #fffde7;
+}
+
+#task-list a {
+    text-decoration: none;
+    color: #0056b3;
+    font-weight: bold;
+}
+
+#task-list a:hover {
+    text-decoration: underline;
+}
+
+.task-type {
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    text-align: center;
+}
+
+.task-report { background-color: #d9534f; }
+.task-quiz { background-color: #428bca; }
+.task-survey { background-color: #5cb85c; }
+.task-other { background-color: #777; }
+
+.deadline {
+    font-size: 13px;
+    color: #555;
+    margin-right: 10px;
+}
+
+.hide-button {
+    background: #e0e0e0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    padding: 0;
+    font-size: 14px;
+    color: #666;
+    visibility: hidden;
+}
+
+#task-list li:hover .hide-button {
+    visibility: visible;
+}
+
+.hide-button:hover {
+    background: #ccc;
+    color: #333;
+}
+
+#reset-hidden-tasks {
+    margin-top: 15px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+    flex-shrink: 0; /* ボタンは縮まない */
+}
+
+#reset-hidden-tasks:hover {
+    background-color: #e0e0e0;
 }
