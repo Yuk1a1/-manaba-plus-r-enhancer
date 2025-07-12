@@ -138,15 +138,12 @@ async function fetchAllTasks() {
     for (const def of taskDefinitions) {
         try {
             const doc = await fetchAndParse(def.url);
-            // ★★★ 取得ロジックをより堅牢なものに修正 ★★★
             const rows = doc.querySelectorAll('.contentbody-l tr');
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
-                // td要素が3つ以上ある行のみを、課題データ行とみなす
                 if (cells.length < 3) return; 
 
                 const titleElement = cells[0].querySelector('a');
-                // aタグがなければスキップ
                 if (!titleElement) return;
 
                 const title = titleElement.innerText.trim();
@@ -155,8 +152,10 @@ async function fetchAllTasks() {
                 
                 let deadlineDate = null;
                 if (deadline && deadline !== '締切なし') {
-                    const match = deadline.match(/(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/);
+                    // ★★★ ここが修正点：正規表現をハイフン(-)形式に対応 ★★★
+                    const match = deadline.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
                     if (match) {
+                        // JavaScriptのDateオブジェクトは月を0-11で扱うため、-1する
                         deadlineDate = new Date(match[1], match[2] - 1, match[3], match[4], match[5]);
                     }
                 }
