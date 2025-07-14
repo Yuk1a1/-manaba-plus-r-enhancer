@@ -23,6 +23,10 @@ function createRightColumn(parentElement) {
     calendarTitle.textContent = '締切カレンダー';
     calendarBox.appendChild(calendarTitle);
 
+    const calendarElement = document.createElement('div');
+    calendarElement.id = 'vanilla-calendar';
+    calendarBox.appendChild(calendarElement);
+
     rightColumn.appendChild(kadaiBox);
     rightColumn.appendChild(calendarBox);
     parentElement.appendChild(rightColumn);
@@ -152,10 +156,8 @@ async function fetchAllTasks() {
                 
                 let deadlineDate = null;
                 if (deadline && deadline !== '締切なし') {
-                    // ★★★ ここが修正点：正規表現をハイフン(-)形式に対応 ★★★
                     const match = deadline.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
                     if (match) {
-                        // JavaScriptのDateオブジェクトは月を0-11で扱うため、-1する
                         deadlineDate = new Date(match[1], match[2] - 1, match[3], match[4], match[5]);
                     }
                 }
@@ -210,17 +212,45 @@ function hideTask(taskId) {
  */
 async function resetHiddenTasks() {
     await chrome.storage.local.remove('hiddenTasks');
-    hiddenTasks = [];
-    
-    const kadaiContainer = document.getElementById('kadai-box');
-    if (!kadaiContainer) return;
-    
-    const oldList = kadaiContainer.querySelector('#task-list');
-    if(oldList) oldList.remove();
-    const oldButton = kadaiContainer.querySelector('#reset-hidden-tasks');
-    if(oldButton) oldButton.remove();
+    location.reload();
+}
 
-    mainProcess(kadaiContainer);
+/**
+ * 課題リストからカレンダー用のポップアップ情報を作成する
+ * @param {Array<object>} tasks - 全ての課題の配列
+ * @returns {object} - VanillaCalendarライブラリのpopupsオプション用のオブジェクト
+ */
+function createCalendarPopups(tasks) {
+    const popups = {};
+
+    tasks.forEach(task => {
+        if (!task.deadlineDate) {
+            return;
+        }
+
+        const year = task.deadlineDate.getFullYear();
+        const month = String(task.deadlineDate.getMonth() + 1).padStart(2, '0');
+        const day = String(task.deadlineDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        // ★★★ 変更点: 課題全体をリンク(<a>タグ)で囲む ★★★
+        const popupHtml = `
+            <a href="${task.link}" target="_blank" class="task-popup">
+                <span class="task-type-popup ${getTaskTypeClass(task.taskType)}">${task.taskType}</span>
+                <span class="task-title-popup">${task.title}</span>
+            </a>
+        `;
+
+        if (popups[dateStr]) {
+            popups[dateStr].html += popupHtml;
+        } else {
+            popups[dateStr] = {
+                modifier: 'task-day',
+                html: popupHtml
+            };
+        }
+    });
+    return popups;
 }
 
 // グローバル変数として非表示タスクIDのリストを保持
@@ -229,13 +259,9 @@ let hiddenTasks = [];
 /**
  * 課題取得から表示までの一連の処理
  * @param {HTMLElement} kadaiContainer - 課題リストを表示するコンテナ
+ * @param {Array<object>} allTasks - 取得済みの全課題データ
  */
-async function mainProcess(kadaiContainer) {
-    const data = await chrome.storage.local.get('hiddenTasks');
-    hiddenTasks = data.hiddenTasks || [];
-    
-    const allTasks = await fetchAllTasks();
-    sortTasks(allTasks);
+function mainProcess(kadaiContainer, allTasks) {
     displayTasks(allTasks, kadaiContainer);
 
     if (!kadaiContainer.querySelector('#reset-hidden-tasks')) {
@@ -252,9 +278,7 @@ async function mainProcess(kadaiContainer) {
  * メインの初期化処理
  */
 async function initialize() {
-    if (document.body.classList.contains('layout-initialized')) {
-        return;
-    }
+    if (document.body.classList.contains('layout-initialized')) return;
     document.body.classList.add('layout-initialized');
 
     const body = document.body;
@@ -262,7 +286,21 @@ async function initialize() {
     
     const { kadaiContainer } = createRightColumn(body);
 
-    mainProcess(kadaiContainer);
+    const data = await chrome.storage.local.get('hiddenTasks');
+    hiddenTasks = data.hiddenTasks || [];
+    
+    const allTasks = await fetchAllTasks();
+    sortTasks(allTasks);
+
+    mainProcess(kadaiContainer, allTasks);
+    
+    const calendarPopups = createCalendarPopups(allTasks);
+
+    const calendar = new window.VanillaCalendarPro.Calendar('#vanilla-calendar', {
+        selectedTheme: 'light',
+        popups: calendarPopups
+    });
+    calendar.init();
 }
 
 window.addEventListener('load', initialize);

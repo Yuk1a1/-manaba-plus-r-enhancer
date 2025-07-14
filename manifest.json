@@ -1,19 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "manaba+R 超絶便利にする拡張機能",
+  "name": "manaba+R Enhancer",
   "version": "2.0",
-  "description": "manaba+Rのホーム画面に未提出課題とカレンダーを集約表示します。",
-  "permissions": ["storage"],
-
-  "host_permissions": [
-    "https://ct.ritsumei.ac.jp/*"
+  "description": "manaba+Rのホーム画面に未提出課題一覧とカレンダーを追加します。",
+  "permissions": [
+    "storage"
   ],
-
   "content_scripts": [
     {
-      "matches": ["https://ct.ritsumei.ac.jp/ct/home*"],
-      "css": ["style.css"],
-      "js": ["content.js"]
+      "matches": [
+        "https://ct.ritsumei.ac.jp/ct/home"
+      ],
+      "css": [
+        "style.css",
+        "vanilla-calendar.css"
+      ],
+      "js": [
+        "vanilla-calendar.js",
+        "content.js"
+      ]
     }
   ]
 }

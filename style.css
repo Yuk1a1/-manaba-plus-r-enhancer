@@ -43,28 +43,30 @@ body.custom-layout #container {
     color: #333;
     border-bottom: 2px solid #eee;
     padding-bottom: 8px;
-    flex-shrink: 0; /* タイトルは縮まない */
+    flex-shrink: 0;
 }
 
 /* --- 未提出課題BOXのスタイル --- */
 #kadai-box {
-    flex: 1; /* 高さを均等に分ける */
-    /* ★変更：BOX自体のスクロールは不要なので削除 */
+    flex: 1;
 }
 
 /* --- カレンダーBOXのスタイル --- */
 #calendar-box {
-    flex: 1; /* 高さを均等に分ける */
+    flex: 1;
+    /* ★★★ 変更点: はみ出したポップアップを表示させるため overflow を visible に ★★★ */
+    overflow: visible;
+    position: relative; /* z-indexを有効にするため */
 }
 
-/* --- 課題リスト自体のスタイル (★ここが重要) --- */
+/* --- 課題リスト自体のスタイル --- */
 #task-list {
     list-style-type: none;
     padding: 0;
     margin: 0;
-    flex: 1; /* ★追加：利用可能なスペースを全て使うようにする */
-    overflow-y: auto; /* ★追加：内容がはみ出たら、このリスト自体をスクロールさせる */
-    min-height: 0; /* ★追加：flexアイテムが正しく縮むために必要 */
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 #task-list li {
@@ -146,9 +148,67 @@ body.custom-layout #container {
     cursor: pointer;
     border-radius: 4px;
     width: 100%;
-    flex-shrink: 0; /* ボタンは縮まない */
+    flex-shrink: 0;
 }
 
 #reset-hidden-tasks:hover {
     background-color: #e0e0e0;
+}
+
+/* --- カレンダー関連のカスタムスタイル --- */
+
+/* カレンダー内の締切日マーカーのスタイル */
+.vc-date__btn.task-day {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
+    font-weight: bold !important;
+    border-radius: 4px !important;
+}
+
+/* カレンダーのポップアップ全体のスタイル */
+.vc-date__popup {
+    padding: 8px !important;
+    border-radius: 6px !important;
+    border: 1px solid #ddd !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    /* ★★★ 変更点: ポップアップが他の要素の前面に来るように z-index を設定 ★★★ */
+    z-index: 1000;
+}
+
+/* ポップアップ内の各課題（リンク）のスタイル */
+.task-popup {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 4px;
+    text-decoration: none; /* リンクの下線を消す */
+    color: #333; /* 文字色を黒に */
+    display: block;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.task-popup:hover {
+    background-color: #f0f0f0; /* ホバー時に背景色を付ける */
+    text-decoration: none;
+}
+.task-popup:last-child {
+    margin-bottom: 0;
+}
+
+/* ポップアップ内の課題種別ラベル */
+.task-type-popup {
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    font-size: 10px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* ポップアップ内の課題タイトル */
+.task-title-popup {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
