@@ -1,3 +1,5 @@
+console.log("manaba+R Enhancer: content.js is running."); // ★ 変更点: デバッグ用ログを追加 ★
+
 /**
  * 右カラムを生成し、未提出課題リストとカレンダーのコンテナを配置する
  * @param {HTMLElement} parentElement - 右カラムを追加する親要素
@@ -301,6 +303,16 @@ async function initialize() {
         popups: calendarPopups
     });
     calendar.init();
+
+    // ★ 変更点: 現在のページの授業名をストレージに保存 ★
+    let courseName = "";
+    const courseNameElement = document.querySelector("#coursename"); 
+    if (courseNameElement) {
+        courseName = courseNameElement.innerText.trim();
+    } else {
+        courseName = document.title.replace(/ - manaba$/, '').trim();
+    }
+    chrome.storage.local.set({ currentCourseName: courseName });
 }
 
 window.addEventListener('load', initialize);
