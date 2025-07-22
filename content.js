@@ -1,4 +1,5 @@
-console.log("manaba+R Enhancer: content.js is running."); // ★ 変更点: デバッグ用ログを追加 ★
+// manaba-plus-r-enhancer/content.js
+console.log("manaba+R Enhancer: content.js is running.");
 
 /**
  * 右カラムを生成し、未提出課題リストとカレンダーのコンテナを配置する
@@ -235,7 +236,6 @@ function createCalendarPopups(tasks) {
         const day = String(task.deadlineDate.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
 
-        // ★★★ 変更点: 課題全体をリンク(<a>タグ)で囲む ★★★
         const popupHtml = `
             <a href="${task.link}" target="_blank" class="task-popup">
                 <span class="task-type-popup ${getTaskTypeClass(task.taskType)}">${task.taskType}</span>
@@ -304,15 +304,21 @@ async function initialize() {
     });
     calendar.init();
 
-    // ★ 変更点: 現在のページの授業名をストレージに保存 ★
-    let courseName = "";
     const courseNameElement = document.querySelector("#coursename"); 
     if (courseNameElement) {
-        courseName = courseNameElement.innerText.trim();
-    } else {
-        courseName = document.title.replace(/ - manaba$/, '').trim();
+        let courseName = courseNameElement.innerText.trim();
+        
+        const separatorIndex = courseName.indexOf('§');
+        if (separatorIndex !== -1) {
+            courseName = courseName.substring(0, separatorIndex).trim();
+        }
+
+        // ★ 変更点: 正規表現を使って、先頭の「数字 + コロン + 空白」のパターンを削除する
+        // これにより、空白の種類（半角、全角、特殊な空白）に影響されずにコース番号を削除できる
+        courseName = courseName.replace(/^\d+:\s*/, '').trim();
+
+        chrome.storage.local.set({ currentCourseName: courseName });
     }
-    chrome.storage.local.set({ currentCourseName: courseName });
 }
 
 window.addEventListener('load', initialize);

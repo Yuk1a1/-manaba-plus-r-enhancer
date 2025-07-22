@@ -1,32 +1,32 @@
+// manaba-plus-r-enhancer/background.js
 chrome.downloads.onDeterminingFilename.addListener(function(downloadItem, suggest) {
-  console.log("--- onDeterminingFilename triggered ---"); // ★ 変更点: デバッグログ追加 ★
-  console.log("downloadItem.referrer:", downloadItem.referrer); // ★ 変更点: デバッグログ追加 ★
-
-  const referrerUrl = downloadItem.referrer;
-  let courseId = "unknown_course";
-  const courseIdMatch = referrerUrl.match(/(?:course|page)_[a-f0-9]*?(\d+)/);
-  if (courseIdMatch && courseIdMatch[1]) {
-    courseId = `course_${courseIdMatch[1]}`;
+  // ★ 変更点: URLをチェックし、manabaドメインでなければ処理を中断
+  const manabaUrlPattern = "https://ct.ritsumei.ac.jp/ct/";
+  if (!downloadItem.referrer || !downloadItem.referrer.startsWith(manabaUrlPattern)) {
+    // manabaからのダウンロードではないため、何もしない
+    // suggestを呼ばずに終了することで、ブラウザのデフォルトのダウンロード処理に任せる
+    return;
   }
-  console.log("Extracted courseId:", courseId); // ★ 変更点: デバッグログ追加 ★
 
-  // ★ 変更点: chrome.storage.localから授業名を取得する ★
+  // ★ 変更点: 授業名取得ロジックを使い、ファイルパスを生成する
   chrome.storage.local.get(['currentCourseName'], function(result) {
-    let courseName = "Manaba Files"; // デフォルトの授業名
-    if (result.currentCourseName) {
-      courseName = result.currentCourseName;
-    }
-    console.log("Retrieved courseName from storage:", courseName); // ★ 変更点: デバッグログ追加 ★
+    // content_scriptから保存された授業名を使用する。なければデフォルト名。
+    let courseName = result.currentCourseName || "manaba-files";
 
-    const sanitizedCourseName = courseName.replace(/[/\\?%*:|"<>.\\]/g, '-');
-    const sanitizedCourseId = courseId.replace(/[/\\?%*:|"<>.\\]/g, '-');
-
+    // ファイル名として不適切な文字を置換する
+    const sanitizedCourseName = courseName.replace(/[\\/:*?"<>|]/g, '－');
     const originalFilename = downloadItem.filename;
-    const newFilename = `Manaba/${sanitizedCourseName}_${sanitizedCourseId}/${originalFilename}`;
-    console.log("Suggested newFilename:", newFilename); // ★ 変更点: デバッグログ追加 ★
 
-    suggest({ filename: newFilename });
+    // 新しいファイルパスを構築する (Manaba/[授業名]/[元のファイル名])
+    const newFilename = `Manaba/${sanitizedCourseName}/${originalFilename}`;
+
+    console.log("Suggesting new filename:", newFilename);
+
+    suggest({
+      filename: newFilename,
+      conflictAction: 'uniquify' // ファイル名が競合した場合、(1), (2)のように連番を付ける
+    });
   });
 
-  return true;
+  return true; // 非同期処理のためtrueを返す
 });
