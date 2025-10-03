@@ -44,13 +44,13 @@ function createRightColumn(parentElement) {
     parentElement.appendChild(rightColumn);
 
     // 右カラム全体のトグル機能
-    let rightCollapsed = false;
+    let rightColumnHidden = false;
     rightTitle.addEventListener('click', () => {
-        rightCollapsed = !rightCollapsed;
+        rightColumnHidden = !rightColumnHidden;
         const boxes = rightColumn.querySelectorAll('.content-box');
-        boxes.forEach(box => box.style.display = rightCollapsed ? 'none' : '');
-        rightTitle.querySelector('.toggle-icon').textContent = rightCollapsed ? '▶' : '▼';
-        document.body.classList.toggle('right-collapsed', rightCollapsed);
+        boxes.forEach(box => box.style.display = rightColumnHidden ? 'none' : '');
+        rightTitle.querySelector('.toggle-icon').textContent = rightColumnHidden ? '▶' : '▼';
+        document.body.classList.toggle('right-column-hidden', rightColumnHidden);
     });
 
     return { kadaiContainer: kadaiBox, calendarContainer: calendarBox };

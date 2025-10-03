@@ -13,8 +13,11 @@ body.custom-layout #container {
 }
 
 /* 右カラム非表示時の左カラム幅 */
-body.custom-layout.right-collapsed #container {
-    width: 100%;
+body.custom-layout.right-column-hidden #container {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 /* --- 右カラム全体のコンテナ --- */
