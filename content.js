@@ -47,10 +47,8 @@ function createRightColumn(parentElement) {
     let rightCollapsed = false;
     rightTitle.addEventListener('click', () => {
         rightCollapsed = !rightCollapsed;
-        const boxes = rightColumn.querySelectorAll('.content-box');
-        boxes.forEach(box => box.style.display = rightCollapsed ? 'none' : '');
+        rightColumn.style.display = rightCollapsed ? 'none' : '';
         rightTitle.querySelector('.toggle-icon').textContent = rightCollapsed ? '▶' : '▼';
-        document.body.classList.toggle('right-collapsed', rightCollapsed);
     });
 
     return { kadaiContainer: kadaiBox, calendarContainer: calendarBox };

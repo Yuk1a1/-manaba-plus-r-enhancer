@@ -1,20 +1,9 @@
-/* 既存のレイアウトをFlexboxに変更 */
-body.custom-layout {
-    display: flex;
-    justify-content: center;
-}
-
 /* メインコンテンツ（左カラム）の幅を調整 */
 body.custom-layout #container {
     order: 1; /* 左側に配置 */
-    width: 65%;
+    flex: 1;
     margin: 0;
     padding: 20px;
-}
-
-/* 右カラム非表示時の左カラム幅 */
-body.custom-layout.right-collapsed #container {
-    width: 100%;
 }
 
 /* --- 右カラム全体のコンテナ --- */
