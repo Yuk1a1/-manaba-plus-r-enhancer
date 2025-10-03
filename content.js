@@ -50,6 +50,7 @@ function createRightColumn(parentElement) {
         const boxes = rightColumn.querySelectorAll('.content-box');
         boxes.forEach(box => box.style.display = rightCollapsed ? 'none' : '');
         rightTitle.querySelector('.toggle-icon').textContent = rightCollapsed ? '▶' : '▼';
+        document.body.classList.toggle('right-collapsed', rightCollapsed);
     });
 
     return { kadaiContainer: kadaiBox, calendarContainer: calendarBox };

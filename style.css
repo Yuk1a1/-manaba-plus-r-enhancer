@@ -12,6 +12,11 @@ body.custom-layout #container {
     padding: 20px;
 }
 
+/* 右カラム非表示時の左カラム幅 */
+body.custom-layout.right-collapsed #container {
+    width: 100%;
+}
+
 /* --- 右カラム全体のコンテナ --- */
 #right-column {
     order: 2; /* 右側に配置 */
