@@ -147,6 +147,18 @@ body.custom-layout #container {
     margin-right: 10px;
 }
 
+.deadline-red {
+    color: red !important;
+}
+
+.deadline-yellow {
+    color: orange !important;
+}
+
+.deadline-black {
+    color: black !important;
+}
+
 /* ★ 変更点: カレンダーアイコンのスタイル */
 .calendar-icon {
     width: 16px;

@@ -102,6 +102,18 @@ function displayTasks(tasks, container) {
         deadlineSpan.className = 'deadline';
         deadlineSpan.textContent = task.deadline;
 
+        if (task.deadlineDate) {
+            const daysLeft = (task.deadlineDate - now) / (1000 * 60 * 60 * 24);
+            console.log(task.deadline, task.deadlineDate, daysLeft);
+            if (daysLeft <= 1) deadlineSpan.classList.add('deadline-red');
+            else if (daysLeft <= 3) deadlineSpan.classList.add('deadline-yellow');
+            else deadlineSpan.classList.add('deadline-black');
+            console.log('deadlineSpan classes:', deadlineSpan.classList);
+            console.log('computed color:', getComputedStyle(deadlineSpan).color);
+        } else {
+            deadlineSpan.classList.add('deadline-black');
+        }
+
         const calendarIcon = document.createElement('div');
         calendarIcon.className = 'calendar-icon';
         calendarIcon.title = 'Googleカレンダーに登録';
