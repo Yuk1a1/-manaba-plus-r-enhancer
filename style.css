@@ -39,6 +39,7 @@ body.custom-layout #container {
     cursor: pointer;
     border-bottom: 2px solid #eee;
     padding-bottom: 8px;
+    order: 3;
 }
 
 .toggle-icon {
