@@ -44,6 +44,12 @@ body.custom-layout #container {
     border-bottom: 2px solid #eee;
     padding-bottom: 8px;
     flex-shrink: 0;
+    cursor: pointer;
+}
+
+.toggle-icon {
+    margin-right: 5px;
+    font-size: 14px;
 }
 
 /* --- 未提出課題BOXのスタイル --- */
