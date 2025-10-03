@@ -51,19 +51,17 @@ body.custom-layout.right-column-hidden #container {
 
 /* --- 右カラム全体のタイトル --- */
 .right-column-title {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 18px;
+    margin: 0;
+    padding: 5px;
+    font-size: 14px;
     color: #333;
     cursor: pointer;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 8px;
+    text-align: center;
     order: 3;
 }
 
 .toggle-icon {
-    margin-right: 5px;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 /* --- 未提出課題BOXのスタイル --- */

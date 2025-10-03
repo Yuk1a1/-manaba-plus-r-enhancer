@@ -12,7 +12,7 @@ function createRightColumn(parentElement) {
 
     const rightTitle = document.createElement('h2');
     rightTitle.className = 'right-column-title';
-    rightTitle.innerHTML = '<span class="toggle-icon">▼</span> 拡張機能パネル';
+    rightTitle.innerHTML = '<span class="toggle-icon">▼</span>';
 
     const kadaiBox = document.createElement('div');
     kadaiBox.id = 'kadai-box';
