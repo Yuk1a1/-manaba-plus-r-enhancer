@@ -5,11 +5,19 @@
   "description": "manaba+Rのホーム画面に未提出課題一覧とカレンダーを追加します。",
   "permissions": [
     "storage",
-    "downloads"
+    "downloads",
+    "identity"
   ],
   "host_permissions": [
-    "https://ct.ritsumei.ac.jp/*"
+    "https://ct.ritsumei.ac.jp/*",
+    "https://www.googleapis.com/*"
   ],
+  "oauth2": {
+    "client_id": "642837556502-t9fclukr83qls86g9f2uml98n9jdfc6s.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.events"
+    ]
+  },
   "background": {
     "service_worker": "background.js"
   },

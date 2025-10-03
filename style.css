@@ -51,6 +51,37 @@ body.custom-layout #container {
     flex: 1;
 }
 
+/* ★ 変更点: 上部のボタンエリア */
+.kadai-box-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.kadai-box-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.kadai-box-btn:hover {
+    background-color: #e0e0e0;
+}
+#bulk-register-confirm-btn {
+    background-color: #428bca;
+    color: white;
+    border-color: #357ebd;
+}
+#bulk-register-confirm-btn:hover {
+    background-color: #3276b1;
+}
+#bulk-register-cancel-btn {
+    margin-right: 8px;
+}
+
 /* --- カレンダーBOXのスタイル --- */
 #calendar-box {
     flex: 1;
@@ -71,7 +102,7 @@ body.custom-layout #container {
 
 #task-list li {
     display: grid;
-    grid-template-columns: 70px 1fr auto;
+    grid-template-columns: 20px 70px 1fr auto 24px 24px; /* checkbox, type, title, deadline, calendar, hide */
     gap: 10px;
     align-items: center;
     padding: 10px;
@@ -114,6 +145,40 @@ body.custom-layout #container {
     font-size: 13px;
     color: #555;
     margin-right: 10px;
+}
+
+/* ★ 変更点: カレンダーアイコンのスタイル */
+.calendar-icon {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="%23888888"><path d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24V64H64V24c0-13.3-10.7-24-24-24S16 10.7 16 24V64H0V448H448V64H384V24c0-13.3-10.7-24-24-24s-24 10.7-24 24V64H152V24zM48 112H400V432H48V112zm72 112h32c13.3 0 24 10.7 24 24s-10.7 24-24 24H120c-13.3 0-24-10.7-24-24s10.7-24 24-24zm104-24c-13.3 0-24 10.7-24 24s10.7 24 24 24h32c13.3 0 24-10.7 24-24s-10.7-24-24-24H224zm128 24c0-13.3-10.7-24-24-24H320c-13.3 0-24 10.7-24 24s10.7 24 24 24h32c13.3 0 24-10.7 24-24s-10.7-24-24-24z"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.6;
+}
+.calendar-icon:hover {
+    opacity: 1;
+}
+.calendar-icon.registered {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="%2328a745"><path d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24V64H64V24c0-13.3-10.7-24-24-24S16 10.7 16 24V64H0V448H448V64H384V24c0-13.3-10.7-24-24-24s-24 10.7-24 24V64H152V24zM48 112H400V432H48V112zm296.9 152.9L222.1 387.7c-6.2 6.2-16.4 6.2-22.6 0L144.9 333c-6.2-6.2-6.2-16.4 0-22.6s16.4-6.2 22.6 0L211 328.7l111.1-111.1c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"/></svg>');
+    opacity: 1;
+}
+
+/* ★ 変更点: チェックボックスのスタイル */
+.task-checkbox {
+    justify-self: center;
+}
+
+/* ★ 変更点: 通常はチェックボックスを隠す */
+.task-checkbox {
+    visibility: hidden;
+}
+
+/* ★ 変更点: 一括登録モードの時だけ表示 */
+body.bulk-register-mode .task-checkbox {
+    visibility: visible;
 }
 
 .hide-button {

@@ -18,6 +18,10 @@ function createRightColumn(parentElement) {
     kadaiTitle.textContent = '未提出課題リスト';
     kadaiBox.appendChild(kadaiTitle);
 
+    const controlsDiv = document.createElement('div');
+    controlsDiv.className = 'kadai-box-controls';
+    kadaiBox.appendChild(controlsDiv);
+
     const calendarBox = document.createElement('div');
     calendarBox.id = 'calendar-box';
     calendarBox.className = 'content-box';
@@ -80,6 +84,11 @@ function displayTasks(tasks, container) {
             listItem.classList.add('urgent');
         }
 
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'task-checkbox';
+        checkbox.dataset.taskId = task.id;
+
         const typeSpan = document.createElement('span');
         typeSpan.className = `task-type ${getTaskTypeClass(task.taskType)}`;
         typeSpan.textContent = task.taskType;
@@ -93,6 +102,20 @@ function displayTasks(tasks, container) {
         deadlineSpan.className = 'deadline';
         deadlineSpan.textContent = task.deadline;
 
+        const calendarIcon = document.createElement('div');
+        calendarIcon.className = 'calendar-icon';
+        calendarIcon.title = 'Googleカレンダーに登録';
+        if (!task.deadlineDate) {
+            calendarIcon.style.opacity = '0.2';
+            calendarIcon.style.cursor = 'not-allowed';
+            calendarIcon.title = '締切日時がないため登録できません';
+        } else {
+            calendarIcon.addEventListener('click', async () => {
+                if (isAuthenticated) await registerEventToCalendar(task);
+                else alert('先にGoogleカレンダーと連携してください。');
+            });
+        }
+
         const hideButton = document.createElement('button');
         hideButton.className = 'hide-button';
         hideButton.textContent = '×';
@@ -102,9 +125,11 @@ function displayTasks(tasks, container) {
             hideTask(task.id);
         });
         
+        listItem.appendChild(checkbox);
         listItem.appendChild(typeSpan);
         listItem.appendChild(titleLink);
         listItem.appendChild(deadlineSpan);
+        listItem.appendChild(calendarIcon);
         listItem.appendChild(hideButton);
 
         list.appendChild(listItem);
@@ -115,6 +140,22 @@ function displayTasks(tasks, container) {
         existingList.remove();
     }
     container.appendChild(list);
+}
+
+async function registerEventToCalendar(task) {
+    if (!authToken) {
+        alert('認証トークンがありません。ページをリロードして再試行してください。');
+        return;
+    }
+    const icon = document.querySelector(`li[data-task-id="${CSS.escape(task.id)}"] .calendar-icon`);
+    chrome.runtime.sendMessage({ action: 'createCalendarEvent', token: authToken, task: task }, (response) => {
+        if (response && response.success) {
+            console.log('イベント登録成功:', response.event);
+            if (icon) icon.classList.add('registered');
+        } else {
+            alert(`カレンダー登録に失敗しました: ${response.error}`);
+        }
+    });
 }
 
 
@@ -257,6 +298,9 @@ function createCalendarPopups(tasks) {
 
 // グローバル変数として非表示タスクIDのリストを保持
 let hiddenTasks = [];
+let isAuthenticated = false;
+let authToken = null;
+let allTasks = [];
 
 /**
  * 課題取得から表示までの一連の処理
@@ -264,6 +308,7 @@ let hiddenTasks = [];
  * @param {Array<object>} allTasks - 取得済みの全課題データ
  */
 function mainProcess(kadaiContainer, allTasks) {
+    updateUIBasedOnAuth(kadaiContainer); 
     displayTasks(allTasks, kadaiContainer);
 
     if (!kadaiContainer.querySelector('#reset-hidden-tasks')) {
@@ -275,50 +320,168 @@ function mainProcess(kadaiContainer, allTasks) {
     }
 }
 
+/**
+ * 認証状態に基づいてUIを更新する
+ * @param {HTMLElement} kadaiContainer - 課題ボックスのコンテナ
+ */
+function updateUIBasedOnAuth(kadaiContainer) {
+    const controlsDiv = kadaiContainer.querySelector('.kadai-box-controls');
+    if (!controlsDiv) {
+        console.log('controlsDiv not found');
+        return;
+    }
+    controlsDiv.innerHTML = ''; 
+    console.log('isAuthenticated:', isAuthenticated);
+    if (isAuthenticated) {
+        setupBulkRegisterControls(kadaiContainer);
+    } else {
+        setupAuthButton(controlsDiv);
+    }
+}
+
+/**
+ * Google認証ボタンをセットアップする
+ * @param {HTMLElement} container - ボタンを追加するコンテナ
+ */
+function setupAuthButton(container) {
+    const authButton = document.createElement('button');
+    authButton.id = 'auth-btn';
+    authButton.className = 'kadai-box-btn';
+    authButton.textContent = 'Googleカレンダーと連携する';
+    authButton.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: 'requestAuth', interactive: true }, (response) => {
+            if (response && response.success) {
+                alert('連携に成功しました。');
+                isAuthenticated = true;
+                authToken = response.token;
+                updateUIBasedOnAuth(document.getElementById('kadai-box'));
+            } else {
+                alert(`連携に失敗しました:\n${response.error}`);
+            }
+        });
+    });
+    container.appendChild(authButton);
+}
+
+/**
+ * 一括登録コントロールをセットアップする
+ * @param {HTMLElement} container - 課題ボックスのコンテナ
+ */
+function setupBulkRegisterControls(container) {
+    const controlsDiv = container.querySelector('.kadai-box-controls');
+    const bulkRegisterBtn = document.createElement('button');
+    bulkRegisterBtn.id = 'bulk-register-btn';
+    bulkRegisterBtn.className = 'kadai-box-btn';
+    bulkRegisterBtn.textContent = 'カレンダーに一括登録';
+    const confirmBtn = document.createElement('button');
+    confirmBtn.id = 'bulk-register-confirm-btn';
+    confirmBtn.className = 'kadai-box-btn';
+    confirmBtn.textContent = '選択した0件を登録';
+    confirmBtn.style.display = 'none';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.id = 'bulk-register-cancel-btn';
+    cancelBtn.className = 'kadai-box-btn';
+    cancelBtn.textContent = 'キャンセル';
+    cancelBtn.style.display = 'none';
+    
+    controlsDiv.appendChild(cancelBtn);
+    controlsDiv.appendChild(confirmBtn);
+    controlsDiv.appendChild(bulkRegisterBtn);
+    
+    bulkRegisterBtn.addEventListener('click', () => {
+        document.body.classList.add('bulk-register-mode');
+        bulkRegisterBtn.style.display = 'none';
+        confirmBtn.style.display = 'inline-block';
+        cancelBtn.style.display = 'inline-block';
+        updateSelectedCount(); 
+    });
+    cancelBtn.addEventListener('click', () => {
+        document.body.classList.remove('bulk-register-mode');
+        bulkRegisterBtn.style.display = 'inline-block';
+        confirmBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = false);
+    });
+    confirmBtn.addEventListener('click', async () => {
+        const selectedCheckboxes = document.querySelectorAll('.task-checkbox:checked');
+        if (selectedCheckboxes.length === 0) return;
+        const tasksToRegister = [];
+        selectedCheckboxes.forEach(checkbox => {
+            const taskId = checkbox.dataset.taskId;
+            const task = allTasks.find(t => t.id === taskId);
+            if (task) tasksToRegister.push(task);
+        });
+
+        for (const task of tasksToRegister) {
+            await registerEventToCalendar(task);
+        }
+        alert(`${tasksToRegister.length}件の課題をカレンダーに登録しました。`);
+        cancelBtn.click();
+    });
+
+    container.addEventListener('change', (e) => {
+        if (e.target.classList.contains('task-checkbox')) {
+            updateSelectedCount();
+        }
+    });
+
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.task-checkbox:checked').length;
+        confirmBtn.textContent = `選択した${count}件を登録`;
+    }
+}
+
 
 /**
  * メインの初期化処理
  */
 async function initialize() {
     if (document.body.classList.contains('layout-initialized')) return;
-    document.body.classList.add('layout-initialized');
-
-    const body = document.body;
-    body.classList.add('custom-layout');
-    
-    const { kadaiContainer } = createRightColumn(body);
-
-    const data = await chrome.storage.local.get('hiddenTasks');
-    hiddenTasks = data.hiddenTasks || [];
-    
-    const allTasks = await fetchAllTasks();
-    sortTasks(allTasks);
-
-    mainProcess(kadaiContainer, allTasks);
-    
-    const calendarPopups = createCalendarPopups(allTasks);
-
-    const calendar = new window.VanillaCalendarPro.Calendar('#vanilla-calendar', {
-        selectedTheme: 'light',
-        popups: calendarPopups
-    });
-    calendar.init();
-
-    const courseNameElement = document.querySelector("#coursename"); 
-    if (courseNameElement) {
-        let courseName = courseNameElement.innerText.trim();
-        
-        const separatorIndex = courseName.indexOf('§');
-        if (separatorIndex !== -1) {
-            courseName = courseName.substring(0, separatorIndex).trim();
+    chrome.runtime.sendMessage({ action: 'requestAuth', interactive: false }, async (response) => {
+        console.log('Auth response:', response);
+        if (response && response.success) {
+            isAuthenticated = true;
+            authToken = response.token;
+        } else {
+            isAuthenticated = false;
         }
+        document.body.classList.add('layout-initialized');
+        document.body.classList.add('custom-layout');
+        
+        const { kadaiContainer } = createRightColumn(document.body);
 
-        // ★ 変更点: 正規表現を使って、先頭の「数字 + コロン + 空白」のパターンを削除する
-        // これにより、空白の種類（半角、全角、特殊な空白）に影響されずにコース番号を削除できる
-        courseName = courseName.replace(/^\d+:\s*/, '').trim();
+        const data = await chrome.storage.local.get('hiddenTasks');
+        hiddenTasks = data.hiddenTasks || [];
+        
+        allTasks = await fetchAllTasks();
+        sortTasks(allTasks);
 
-        chrome.storage.local.set({ currentCourseName: courseName });
-    }
+        mainProcess(kadaiContainer, allTasks);
+        
+        const calendarPopups = createCalendarPopups(allTasks);
+
+        const calendar = new window.VanillaCalendarPro.Calendar('#vanilla-calendar', {
+            selectedTheme: 'light',
+            popups: calendarPopups
+        });
+        calendar.init();
+
+        const courseNameElement = document.querySelector("#coursename"); 
+        if (courseNameElement) {
+            let courseName = courseNameElement.innerText.trim();
+            
+            const separatorIndex = courseName.indexOf('§');
+            if (separatorIndex !== -1) {
+                courseName = courseName.substring(0, separatorIndex).trim();
+            }
+
+            // ★ 変更点: 正規表現を使って、先頭の「数字 + コロン + 空白」のパターンを削除する
+            // これにより、空白の種類（半角、全角、特殊な空白）に影響されずにコース番号を削除できる
+            courseName = courseName.replace(/^\d+:\s*/, '').trim();
+
+            chrome.storage.local.set({ currentCourseName: courseName });
+        }
+    });
 }
 
 window.addEventListener('load', initialize);
