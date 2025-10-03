@@ -6,7 +6,7 @@ body.custom-layout {
 /* メインコンテンツ（左カラム）の幅を調整 */
 body.custom-layout #container {
     order: 1; /* 左側に配置 */
-    flex: 1;
+    flex: 1 !important;
     margin: 0;
     padding: 20px;
 }
