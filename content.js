@@ -48,6 +48,7 @@ function createRightColumn(parentElement) {
     rightTitle.addEventListener('click', () => {
         rightCollapsed = !rightCollapsed;
         rightColumn.style.display = rightCollapsed ? 'none' : '';
+        document.body.classList.toggle('right-column-hidden', rightCollapsed);
         rightTitle.querySelector('.toggle-icon').textContent = rightCollapsed ? '▶' : '▼';
     });
 
