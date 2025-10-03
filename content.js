@@ -10,12 +10,17 @@ function createRightColumn(parentElement) {
     const rightColumn = document.createElement('div');
     rightColumn.id = 'right-column';
 
+    const rightTitle = document.createElement('h2');
+    rightTitle.className = 'right-column-title';
+    rightTitle.innerHTML = '<span class="toggle-icon">▼</span> 拡張機能パネル';
+    rightColumn.appendChild(rightTitle);
+
     const kadaiBox = document.createElement('div');
     kadaiBox.id = 'kadai-box';
     kadaiBox.className = 'content-box';
     const kadaiTitle = document.createElement('h2');
     kadaiTitle.className = 'box-title';
-    kadaiTitle.innerHTML = '<span class="toggle-icon">▼</span> 未提出課題リスト';
+    kadaiTitle.textContent = '未提出課題リスト';
     kadaiBox.appendChild(kadaiTitle);
 
     const controlsDiv = document.createElement('div');
@@ -27,7 +32,7 @@ function createRightColumn(parentElement) {
     calendarBox.className = 'content-box';
     const calendarTitle = document.createElement('h2');
     calendarTitle.className = 'box-title';
-    calendarTitle.innerHTML = '<span class="toggle-icon">▼</span> 締切カレンダー';
+    calendarTitle.textContent = '締切カレンダー';
     calendarBox.appendChild(calendarTitle);
 
     const calendarElement = document.createElement('div');
@@ -38,21 +43,13 @@ function createRightColumn(parentElement) {
     rightColumn.appendChild(calendarBox);
     parentElement.appendChild(rightColumn);
 
-    // トグル機能の追加
-    let kadaiCollapsed = false;
-    kadaiTitle.addEventListener('click', () => {
-        kadaiCollapsed = !kadaiCollapsed;
-        const bodyElements = kadaiBox.querySelectorAll(':not(.box-title)');
-        bodyElements.forEach(el => el.style.display = kadaiCollapsed ? 'none' : '');
-        kadaiTitle.querySelector('.toggle-icon').textContent = kadaiCollapsed ? '▶' : '▼';
-    });
-
-    let calendarCollapsed = false;
-    calendarTitle.addEventListener('click', () => {
-        calendarCollapsed = !calendarCollapsed;
-        const bodyElements = calendarBox.querySelectorAll(':not(.box-title)');
-        bodyElements.forEach(el => el.style.display = calendarCollapsed ? 'none' : '');
-        calendarTitle.querySelector('.toggle-icon').textContent = calendarCollapsed ? '▶' : '▼';
+    // 右カラム全体のトグル機能
+    let rightCollapsed = false;
+    rightTitle.addEventListener('click', () => {
+        rightCollapsed = !rightCollapsed;
+        const boxes = rightColumn.querySelectorAll('.content-box');
+        boxes.forEach(box => box.style.display = rightCollapsed ? 'none' : '');
+        rightTitle.querySelector('.toggle-icon').textContent = rightCollapsed ? '▶' : '▼';
     });
 
     return { kadaiContainer: kadaiBox, calendarContainer: calendarBox };

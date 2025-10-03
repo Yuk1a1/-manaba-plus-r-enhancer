@@ -36,15 +36,15 @@ body.custom-layout #container {
     min-height: 0;
 }
 
-.box-title {
+/* --- 右カラム全体のタイトル --- */
+.right-column-title {
     margin-top: 0;
     margin-bottom: 10px;
-    font-size: 16px;
+    font-size: 18px;
     color: #333;
+    cursor: pointer;
     border-bottom: 2px solid #eee;
     padding-bottom: 8px;
-    flex-shrink: 0;
-    cursor: pointer;
 }
 
 .toggle-icon {
