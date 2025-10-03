@@ -13,7 +13,6 @@ function createRightColumn(parentElement) {
     const rightTitle = document.createElement('h2');
     rightTitle.className = 'right-column-title';
     rightTitle.innerHTML = '<span class="toggle-icon">▼</span> 拡張機能パネル';
-    rightColumn.appendChild(rightTitle);
 
     const kadaiBox = document.createElement('div');
     kadaiBox.id = 'kadai-box';
@@ -42,15 +41,15 @@ function createRightColumn(parentElement) {
     rightColumn.appendChild(kadaiBox);
     rightColumn.appendChild(calendarBox);
     parentElement.appendChild(rightColumn);
+    parentElement.appendChild(rightTitle);
 
     // 右カラム全体のトグル機能
     let rightColumnHidden = false;
     rightTitle.addEventListener('click', () => {
         rightColumnHidden = !rightColumnHidden;
-        const boxes = rightColumn.querySelectorAll('.content-box');
-        boxes.forEach(box => box.style.display = rightColumnHidden ? 'none' : '');
-        rightTitle.querySelector('.toggle-icon').textContent = rightColumnHidden ? '▶' : '▼';
+        rightColumn.style.display = rightColumnHidden ? 'none' : '';
         document.body.classList.toggle('right-column-hidden', rightColumnHidden);
+        rightTitle.querySelector('.toggle-icon').textContent = rightColumnHidden ? '▶' : '▼';
     });
 
     return { kadaiContainer: kadaiBox, calendarContainer: calendarBox };

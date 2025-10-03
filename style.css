@@ -1,23 +1,22 @@
 /* 既存のレイアウトをFlexboxに変更 */
 body.custom-layout {
     display: flex;
-    justify-content: center;
 }
 
 /* メインコンテンツ（左カラム）の幅を調整 */
 body.custom-layout #container {
     order: 1; /* 左側に配置 */
-    width: 65%;
-    margin: 0;
+    flex: 1 !important;
+    margin: 0 !important;
     padding: 20px;
 }
 
-/* 右カラム非表示時の左カラム幅 */
+/* 右カラム非表示時のスタイル */
 body.custom-layout.right-column-hidden #container {
     width: 100% !important;
-    max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
+    max-width: none !important;
 }
 
 /* --- 右カラム全体のコンテナ --- */
@@ -53,6 +52,7 @@ body.custom-layout.right-column-hidden #container {
     cursor: pointer;
     border-bottom: 2px solid #eee;
     padding-bottom: 8px;
+    order: 3;
 }
 
 .toggle-icon {
