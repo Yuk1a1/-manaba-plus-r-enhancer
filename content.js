@@ -114,6 +114,12 @@ function displayTasks(tasks, container) {
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'assignment-details';
 
+        // コース名を追加
+        const courseNameSpan = document.createElement('span');
+        courseNameSpan.className = 'course-name';
+        courseNameSpan.textContent = task.courseName;
+        detailsDiv.appendChild(courseNameSpan);
+
         const titleLink = document.createElement('a');
         titleLink.href = task.link;
         titleLink.textContent = task.title;
@@ -230,6 +236,7 @@ async function fetchAllTasks() {
     ];
 
     let allTasks = [];
+    const courseList = await fetchCourseList();
 
     for (const def of taskDefinitions) {
         try {
@@ -246,6 +253,11 @@ async function fetchAllTasks() {
                 const link = titleElement.href;
                 const deadline = cells[2].innerText.trim();
                 
+                // コースIDをリンクから抽出
+                const courseIdMatch = link.match(/course_(\d+)/);
+                const courseId = courseIdMatch ? courseIdMatch[1] : null;
+                const courseName = courseId ? courseList[courseId] || '不明' : '不明';
+                
                 let deadlineDate = null;
                 if (deadline && deadline !== '締切なし') {
                     const match = deadline.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
@@ -260,7 +272,9 @@ async function fetchAllTasks() {
                     title,
                     link,
                     deadline,
-                    deadlineDate
+                    deadlineDate,
+                    courseId,
+                    courseName
                 });
             });
         } catch (error) {
@@ -268,6 +282,36 @@ async function fetchAllTasks() {
         }
     }
     return allTasks;
+}
+
+/**
+ * コース一覧を取得する
+ * @returns {Promise<object>} - コースIDをキー、コース名を値とするオブジェクト
+ */
+async function fetchCourseList() {
+    try {
+        const doc = await fetchAndParse('/ct/home_course');
+        const courses = {};
+        // コースリンクのセレクタを仮定（実際のページで確認）
+        doc.querySelectorAll('a[href*="/ct/course_"]').forEach(link => {
+            const href = link.href;
+            const match = href.match(/course_(\d+)/);
+            if (match) {
+                let courseName = link.textContent.trim();
+                // コース名から番号を削除（既存ロジックを適用）
+                const separatorIndex = courseName.indexOf('§');
+                if (separatorIndex !== -1) {
+                    courseName = courseName.substring(0, separatorIndex).trim();
+                }
+                courseName = courseName.replace(/^\d+:\s*/, '').trim();
+                courses[match[1]] = courseName;
+            }
+        });
+        return courses;
+    } catch (error) {
+        console.error('コース一覧の取得に失敗しました:', error);
+        return {};
+    }
 }
 
 /**
