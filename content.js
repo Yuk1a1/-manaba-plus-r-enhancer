@@ -103,30 +103,54 @@ function displayTasks(tasks, container) {
         checkbox.className = 'task-checkbox';
         checkbox.dataset.taskId = task.id;
 
+        // 課題内容エリア
+        const contentArea = document.createElement('div');
+        contentArea.className = 'assignment-content-area';
+
         const typeSpan = document.createElement('span');
         typeSpan.className = `task-type ${getTaskTypeClass(task.taskType)}`;
         typeSpan.textContent = task.taskType;
+
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'assignment-details';
 
         const titleLink = document.createElement('a');
         titleLink.href = task.link;
         titleLink.textContent = task.title;
         titleLink.target = '_blank';
+        titleLink.className = 'assignment-title';
 
-        const deadlineSpan = document.createElement('span');
-        deadlineSpan.className = 'deadline';
-        deadlineSpan.textContent = task.deadline;
+        const deadlineInfo = document.createElement('div');
+        deadlineInfo.className = 'deadline-info';
 
         if (task.deadlineDate) {
+            const dateStr = task.deadlineDate.toISOString().split('T')[0]; // YYYY-MM-DD
+            const timeStr = task.deadlineDate.toTimeString().slice(0, 5); // HH:MM
+
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'deadline-date';
+            dateSpan.textContent = dateStr;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'deadline-time';
+            timeSpan.textContent = timeStr;
+
+            deadlineInfo.appendChild(dateSpan);
+            deadlineInfo.appendChild(timeSpan);
+
             const daysLeft = (task.deadlineDate - now) / (1000 * 60 * 60 * 24);
-            console.log(task.deadline, task.deadlineDate, daysLeft);
-            if (daysLeft <= 1) deadlineSpan.classList.add('deadline-red');
-            else if (daysLeft <= 3) deadlineSpan.classList.add('deadline-yellow');
-            else deadlineSpan.classList.add('deadline-black');
-            console.log('deadlineSpan classes:', deadlineSpan.classList);
-            console.log('computed color:', getComputedStyle(deadlineSpan).color);
+            if (daysLeft <= 1) deadlineInfo.classList.add('deadline-red');
+            else if (daysLeft <= 3) deadlineInfo.classList.add('deadline-yellow');
+            else deadlineInfo.classList.add('deadline-black');
         } else {
-            deadlineSpan.classList.add('deadline-black');
+            deadlineInfo.classList.add('deadline-black');
+            deadlineInfo.textContent = '期限なし';
         }
+
+        detailsDiv.appendChild(titleLink);
+        detailsDiv.appendChild(deadlineInfo);
+        contentArea.appendChild(typeSpan);
+        contentArea.appendChild(detailsDiv);
 
         const calendarIcon = document.createElement('div');
         calendarIcon.className = 'calendar-icon';
@@ -152,9 +176,7 @@ function displayTasks(tasks, container) {
         });
         
         listItem.appendChild(checkbox);
-        listItem.appendChild(typeSpan);
-        listItem.appendChild(titleLink);
-        listItem.appendChild(deadlineSpan);
+        listItem.appendChild(contentArea);
         listItem.appendChild(calendarIcon);
         listItem.appendChild(hideButton);
 
