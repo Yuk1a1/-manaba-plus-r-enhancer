@@ -295,7 +295,7 @@ async function fetchCourseList() {
         const doc = await fetchAndParse('/ct/home_course');
         const courses = {};
         // コースリンクのセレクタを修正
-        doc.querySelectorAll('a[href*="course_"]').forEach(link => {
+        doc.querySelectorAll('a[href^="course_"]').forEach(link => {
             const href = link.href;
             const match = href.match(/course_(\d+)/);
             if (match) {
