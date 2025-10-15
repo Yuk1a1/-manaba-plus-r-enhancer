@@ -258,8 +258,6 @@ async function fetchAllTasks() {
                 const courseId = courseIdMatch ? courseIdMatch[1] : null;
                 const courseName = courseId ? courseList[courseId] || '不明' : '不明';
                 
-                console.log(`Task: ${title}, courseId: ${courseId}, courseName: ${courseName}`);
-                
                 let deadlineDate = null;
                 if (deadline && deadline !== '締切なし') {
                     const match = deadline.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
@@ -311,7 +309,6 @@ async function fetchCourseList() {
                 courses[match[1]] = courseName;
             }
         });
-        console.log('Fetched courses:', Object.keys(courses).length, courses);
         return courses;
     } catch (error) {
         console.error('コース一覧の取得に失敗しました:', error);
