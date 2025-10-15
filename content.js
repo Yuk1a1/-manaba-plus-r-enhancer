@@ -292,18 +292,20 @@ async function fetchCourseList() {
     try {
         const doc = await fetchAndParse('/ct/home_course');
         const courses = {};
-        // コースリンクのセレクタを仮定（実際のページで確認）
-        doc.querySelectorAll('a[href*="/ct/course_"]').forEach(link => {
+        // コースリンクのセレクタを修正
+        doc.querySelectorAll('a[href*="course_"]').forEach(link => {
             const href = link.href;
             const match = href.match(/course_(\d+)/);
             if (match) {
                 let courseName = link.textContent.trim();
-                // コース名から番号を削除（既存ロジックを適用）
-                const separatorIndex = courseName.indexOf('§');
+                // §で区切られている場合、最初のコース名を使用
+                const parts = courseName.split('§');
+                courseName = parts[0].trim();
+                // コース番号を削除
+                const separatorIndex = courseName.indexOf(':');
                 if (separatorIndex !== -1) {
-                    courseName = courseName.substring(0, separatorIndex).trim();
+                    courseName = courseName.substring(separatorIndex + 1).trim();
                 }
-                courseName = courseName.replace(/^\d+:\s*/, '').trim();
                 courses[match[1]] = courseName;
             }
         });
