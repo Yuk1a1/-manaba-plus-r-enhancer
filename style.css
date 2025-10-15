@@ -177,6 +177,7 @@ body.custom-layout.right-column-hidden #container {
 
 .deadline-time {
     font-weight: bold;
+    font-size: 14px;
 }
 
 #task-list a:hover {
