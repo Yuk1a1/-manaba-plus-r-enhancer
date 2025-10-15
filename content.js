@@ -309,6 +309,7 @@ async function fetchCourseList() {
                 courses[match[1]] = courseName;
             }
         });
+        console.log('Fetched courses:', Object.keys(courses).length, courses);
         return courses;
     } catch (error) {
         console.error('コース一覧の取得に失敗しました:', error);
