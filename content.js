@@ -167,8 +167,13 @@ function displayTasks(tasks, container) {
             calendarIcon.title = '締切日時がないため登録できません';
         } else {
             calendarIcon.addEventListener('click', async () => {
-                if (isAuthenticated) await registerEventToCalendar(task);
-                else alert('先にGoogleカレンダーと連携してください。');
+                if (isAuthenticated) {
+                    await registerEventToCalendar(task);
+                    alert('カレンダーに登録しました！');
+                } else {
+                    alert('先にカレンダー設定を行ってください。');
+                    chrome.runtime.openOptionsPage();
+                }
             });
         }
 
@@ -197,19 +202,46 @@ function displayTasks(tasks, container) {
 }
 
 async function registerEventToCalendar(task) {
-    if (!authToken) {
-        alert('認証トークンがありません。ページをリロードして再試行してください。');
+    // 設定からGAS URLとカレンダーIDを取得
+    const settings = await chrome.storage.sync.get(['gasUrl', 'calendarId']);
+    
+    if (!settings.gasUrl) {
+        alert('設定画面でGoogle Apps ScriptのURLを設定してください。');
+        chrome.runtime.openOptionsPage();
         return;
     }
+
     const icon = document.querySelector(`li[data-task-id="${CSS.escape(task.id)}"] .calendar-icon`);
-    chrome.runtime.sendMessage({ action: 'createCalendarEvent', token: authToken, task: task }, (response) => {
-        if (response && response.success) {
-            console.log('イベント登録成功:', response.event);
-            if (icon) icon.classList.add('registered');
-        } else {
-            alert(`カレンダー登録に失敗しました: ${response.error}`);
-        }
-    });
+    
+    try {
+        // GASにPOSTリクエストを送信
+        const response = await fetch(settings.gasUrl, {
+            method: 'POST',
+            mode: 'no-cors', // GASはCORSヘッダーを返さないため
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                calendarId: settings.calendarId || 'primary',
+                title: task.title,
+                taskType: task.taskType,
+                deadlineDate: task.deadlineDate.toISOString(),
+                description: `${task.courseName}\nmanaba+Rの課題です。`,
+                link: task.link
+            })
+        });
+
+        // no-corsモードではレスポンスの詳細が取得できないため、
+        // エラーが発生しなければ成功とみなす
+        console.log('イベント登録リクエスト送信完了:', task.title);
+        if (icon) icon.classList.add('registered');
+        
+        // 成功メッセージは表示しない（一括登録時にまとめて表示するため）
+        
+    } catch (error) {
+        console.error('カレンダー登録エラー:', error);
+        alert(`カレンダー登録に失敗しました: ${error.message}\n\nGAS URLが正しく設定されているか確認してください。`);
+    }
 }
 
 
@@ -393,7 +425,6 @@ function createCalendarPopups(tasks) {
 // グローバル変数として非表示タスクIDのリストを保持
 let hiddenTasks = [];
 let isAuthenticated = false;
-let authToken = null;
 let allTasks = [];
 
 /**
@@ -434,25 +465,16 @@ function updateUIBasedOnAuth(kadaiContainer) {
 }
 
 /**
- * Google認証ボタンをセットアップする
+ * カレンダー設定ボタンをセットアップする
  * @param {HTMLElement} container - ボタンを追加するコンテナ
  */
 function setupAuthButton(container) {
     const authButton = document.createElement('button');
     authButton.id = 'auth-btn';
     authButton.className = 'kadai-box-btn';
-    authButton.textContent = 'Googleカレンダーと連携する';
+    authButton.textContent = '⚙️ カレンダー設定';
     authButton.addEventListener('click', () => {
-        chrome.runtime.sendMessage({ action: 'requestAuth', interactive: true }, (response) => {
-            if (response && response.success) {
-                alert('連携に成功しました。');
-                isAuthenticated = true;
-                authToken = response.token;
-                updateUIBasedOnAuth(document.getElementById('kadai-box'));
-            } else {
-                alert(`連携に失敗しました:\n${response.error}`);
-            }
-        });
+        chrome.runtime.openOptionsPage();
     });
     container.appendChild(authButton);
 }
@@ -531,51 +553,47 @@ function setupBulkRegisterControls(container) {
  */
 async function initialize() {
     if (document.body.classList.contains('layout-initialized')) return;
-    chrome.runtime.sendMessage({ action: 'requestAuth', interactive: false }, async (response) => {
-        console.log('Auth response:', response);
-        if (response && response.success) {
-            isAuthenticated = true;
-            authToken = response.token;
-        } else {
-            isAuthenticated = false;
-        }
-        document.body.classList.add('layout-initialized');
-        document.body.classList.add('custom-layout');
-        
-        const { kadaiContainer } = createRightColumn(document.body);
+    
+    // GAS URLの設定チェック
+    const settings = await chrome.storage.sync.get(['gasUrl']);
+    isAuthenticated = !!settings.gasUrl;
+    
+    document.body.classList.add('layout-initialized');
+    document.body.classList.add('custom-layout');
+    
+    const { kadaiContainer } = createRightColumn(document.body);
 
-        const data = await chrome.storage.local.get('hiddenTasks');
-        hiddenTasks = data.hiddenTasks || [];
-        
-        allTasks = await fetchAllTasks();
-        sortTasks(allTasks);
+    const data = await chrome.storage.local.get('hiddenTasks');
+    hiddenTasks = data.hiddenTasks || [];
+    
+    allTasks = await fetchAllTasks();
+    sortTasks(allTasks);
 
-        mainProcess(kadaiContainer, allTasks);
-        
-        const calendarPopups = createCalendarPopups(allTasks);
+    mainProcess(kadaiContainer, allTasks);
+    
+    const calendarPopups = createCalendarPopups(allTasks);
 
-        const calendar = new window.VanillaCalendarPro.Calendar('#vanilla-calendar', {
-            selectedTheme: 'light',
-            popups: calendarPopups
-        });
-        calendar.init();
-
-        const courseNameElement = document.querySelector("#coursename"); 
-        if (courseNameElement) {
-            let courseName = courseNameElement.innerText.trim();
-            
-            const separatorIndex = courseName.indexOf('§');
-            if (separatorIndex !== -1) {
-                courseName = courseName.substring(0, separatorIndex).trim();
-            }
-
-            // ★ 変更点: 正規表現を使って、先頭の「数字 + コロン + 空白」のパターンを削除する
-            // これにより、空白の種類（半角、全角、特殊な空白）に影響されずにコース番号を削除できる
-            courseName = courseName.replace(/^\d+:\s*/, '').trim();
-
-            chrome.storage.local.set({ currentCourseName: courseName });
-        }
+    const calendar = new window.VanillaCalendarPro.Calendar('#vanilla-calendar', {
+        selectedTheme: 'light',
+        popups: calendarPopups
     });
+    calendar.init();
+
+    const courseNameElement = document.querySelector("#coursename"); 
+    if (courseNameElement) {
+        let courseName = courseNameElement.innerText.trim();
+        
+        const separatorIndex = courseName.indexOf('§');
+        if (separatorIndex !== -1) {
+            courseName = courseName.substring(0, separatorIndex).trim();
+        }
+
+        // ★ 変更点: 正規表現を使って、先頭の「数字 + コロン + 空白」のパターンを削除する
+        // これにより、空白の種類（半角、全角、特殊な空白）に影響されずにコース番号を削除できる
+        courseName = courseName.replace(/^\d+:\s*/, '').trim();
+
+        chrome.storage.local.set({ currentCourseName: courseName });
+    }
 }
 
 window.addEventListener('load', initialize);

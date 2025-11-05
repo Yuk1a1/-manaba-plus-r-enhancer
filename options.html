@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>manaba+R Enhancer 設定</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: 0 auto;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #428bca;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .section h3 {
+      margin-top: 0;
+      color: #428bca;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #428bca;
+      box-shadow: 0 0 5px rgba(66, 139, 202, 0.3);
+    }
+    .hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+      font-weight: normal;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    #save {
+      background-color: #428bca;
+      color: white;
+      flex: 1;
+    }
+    #save:hover {
+      background-color: #3276b1;
+    }
+    #test {
+      background-color: #5cb85c;
+      color: white;
+      flex: 1;
+    }
+    #test:hover {
+      background-color: #4cae4c;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 4px;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    .message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    .instruction {
+      background: #e7f3ff;
+      padding: 20px;
+      border-left: 5px solid #428bca;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .instruction ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .instruction li {
+      margin: 8px 0;
+    }
+    .code-block {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 5px solid #ffc107;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚙️ manaba+R Enhancer 設定</h1>
+  
+  <div class="instruction">
+    <strong>📌 初回設定の手順:</strong>
+    <ol>
+      <li><strong>Google Apps Scriptプロジェクトを作成</strong>
+        <ul>
+          <li><a href="https://script.google.com/" target="_blank">script.google.com</a> にアクセス</li>
+          <li>「新しいプロジェクト」をクリック</li>
+          <li>提供されたGASコードを貼り付け</li>
+        </ul>
+      </li>
+      <li><strong>ウェブアプリとしてデプロイ</strong>
+        <ul>
+          <li>「デプロイ」→「新しいデプロイ」を選択</li>
+          <li>「種類の選択」で「ウェブアプリ」を選択</li>
+          <li>「次のユーザーとして実行」: <strong>自分</strong></li>
+          <li>「アクセスできるユーザー」: <strong>全員</strong></li>
+        </ul>
+      </li>
+      <li><strong>デプロイURLをコピー</strong>
+        <ul>
+          <li>デプロイ完了後に表示されるURLをコピー</li>
+          <li>下記のフォームに貼り付けて保存</li>
+        </ul>
+      </li>
+      <li><strong>接続テスト</strong>を実行して動作確認</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h3>🔗 Google Apps Script 設定</h3>
+    
+    <label for="gasUrl">
+      Google Apps Script ウェブアプリURL <span style="color: red;">*</span>
+    </label>
+    <input 
+      type="text" 
+      id="gasUrl" 
+      placeholder="https://script.google.com/macros/s/AKfycby.../exec"
+    >
+    <div class="hint">
+      ⚠️ GASプロジェクトをデプロイして取得したURLを入力してください<br>
+      例: https://script.google.com/macros/s/AKfycby1234567890.../exec
+    </div>
+
+    <label for="calendarId">
+      カレンダーID（任意）
+    </label>
+    <input 
+      type="text" 
+      id="calendarId" 
+      placeholder="primary"
+    >
+    <div class="hint">
+      💡 空欄または "primary" でデフォルトカレンダーに登録されます<br>
+      別のカレンダーを指定する場合は、そのカレンダーのIDを入力してください<br>
+      （Googleカレンダーの「設定」→該当カレンダー→「カレンダーの統合」で確認できます）
+    </div>
+
+    <div class="button-group">
+      <button id="save">💾 設定を保存</button>
+      <button id="test">🧪 接続テスト</button>
+    </div>
+  </div>
+
+  <div class="warning">
+    <strong>⚠️ 注意事項:</strong>
+    <ul style="margin: 5px 0; padding-left: 20px;">
+      <li>GAS URLは他人に知られないよう管理してください</li>
+      <li>テストイベントは実際のカレンダーに登録されます（確認後削除してください）</li>
+      <li>初回接続時、Googleアカウントへのアクセス許可が求められる場合があります</li>
+    </ul>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,23 +1,16 @@
 {
   "manifest_version": 3,
   "name": "manaba+R Enhancer",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "manaba+Rのホーム画面に未提出課題一覧とカレンダーを追加します。",
   "permissions": [
     "storage",
-    "downloads",
-    "identity"
+    "downloads"
   ],
   "host_permissions": [
     "https://ct.ritsumei.ac.jp/*",
-    "https://www.googleapis.com/*"
+    "https://script.google.com/*"
   ],
-  "oauth2": {
-    "client_id": "642837556502-t9fclukr83qls86g9f2uml98n9jdfc6s.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/calendar.events"
-    ]
-  },
   "background": {
     "service_worker": "background.js"
   },
@@ -37,5 +30,6 @@
         "content.js"
       ]
     }
-  ]
+  ],
+  "options_page": "options.html"
 }
