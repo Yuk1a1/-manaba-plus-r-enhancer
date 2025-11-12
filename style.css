@@ -84,17 +84,28 @@ body.custom-layout.right-column-hidden #container {
     background-color: #f0f0f0;
     border-radius: 4px;
     cursor: pointer;
+    transition: all 0.2s;
 }
 .kadai-box-btn:hover {
     background-color: #e0e0e0;
+}
+.kadai-box-btn:disabled {
+    background-color: #d0d0d0;
+    color: #888;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 #bulk-register-confirm-btn {
     background-color: #428bca;
     color: white;
     border-color: #357ebd;
 }
-#bulk-register-confirm-btn:hover {
+#bulk-register-confirm-btn:hover:not(:disabled) {
     background-color: #3276b1;
+}
+#bulk-register-confirm-btn:disabled {
+    background-color: #6c9cc9;
+    border-color: #5a8ab3;
 }
 #bulk-register-cancel-btn {
     margin-right: 8px;

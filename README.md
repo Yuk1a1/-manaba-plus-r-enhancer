@@ -1,6 +1,6 @@
 # manaba+R Enhancer
 
-[![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](https://github.com/Yuk1a1/-manaba-plus-r-enhancer)
+[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](https://github.com/Yuk1a1/-manaba-plus-r-enhancer)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 立命館大学のmanaba+R学習管理システムを便利にするChrome拡張機能です。
@@ -132,6 +132,13 @@ git push origin feature/your-feature
 ```
 
 ## 📝 変更履歴
+
+### v3.3.0 (2025-11-12)
+- 🚀 一括登録の大幅な高速化（並列処理により5倍以上高速に）
+- 🔒 ボタン連打による重複登録を防止
+- 📊 一括登録時の進捗表示を追加
+- 🎨 ボタンの無効化状態を視覚的に表示
+- 🐛 個別登録での連打防止も実装
 
 ### v3.2.0 (2025-11-06)
 - ✨ Google Apps Script統合により、誰でも自分のアカウントでカレンダー登録可能に

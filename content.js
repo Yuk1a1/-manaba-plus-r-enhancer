@@ -166,10 +166,25 @@ function displayTasks(tasks, container) {
             calendarIcon.style.cursor = 'not-allowed';
             calendarIcon.title = '締切日時がないため登録できません';
         } else {
+            let isRegistering = false; // 登録中フラグ
             calendarIcon.addEventListener('click', async () => {
+                if (isRegistering) return; // 登録中は無視
+                
                 if (isAuthenticated) {
-                    await registerEventToCalendar(task);
-                    alert('カレンダーに登録しました！');
+                    isRegistering = true;
+                    calendarIcon.style.opacity = '0.5';
+                    calendarIcon.style.cursor = 'wait';
+                    
+                    try {
+                        await registerEventToCalendar(task);
+                        alert('カレンダーに登録しました！');
+                    } catch (error) {
+                        alert(`カレンダー登録に失敗しました: ${error.message}`);
+                    } finally {
+                        isRegistering = false;
+                        calendarIcon.style.opacity = '1';
+                        calendarIcon.style.cursor = 'pointer';
+                    }
                 } else {
                     alert('先にカレンダー設定を行ってください。');
                     chrome.runtime.openOptionsPage();
@@ -206,9 +221,7 @@ async function registerEventToCalendar(task) {
     const settings = await chrome.storage.sync.get(['gasUrl', 'calendarId']);
     
     if (!settings.gasUrl) {
-        alert('設定画面でGoogle Apps ScriptのURLを設定してください。');
-        chrome.runtime.openOptionsPage();
-        return;
+        throw new Error('GAS URLが設定されていません');
     }
 
     const icon = document.querySelector(`li[data-task-id="${CSS.escape(task.id)}"] .calendar-icon`);
@@ -231,16 +244,19 @@ async function registerEventToCalendar(task) {
             })
         });
 
+        // 少し待機してGASの処理が完了するのを待つ
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         // no-corsモードではレスポンスの詳細が取得できないため、
         // エラーが発生しなければ成功とみなす
         console.log('イベント登録リクエスト送信完了:', task.title);
         if (icon) icon.classList.add('registered');
         
-        // 成功メッセージは表示しない（一括登録時にまとめて表示するため）
+        return { success: true, task: task.title };
         
     } catch (error) {
-        console.error('カレンダー登録エラー:', error);
-        alert(`カレンダー登録に失敗しました: ${error.message}\n\nGAS URLが正しく設定されているか確認してください。`);
+        console.error('カレンダー登録エラー:', task.title, error);
+        throw new Error(`${task.title}: ${error.message}`);
     }
 }
 
@@ -521,6 +537,11 @@ function setupBulkRegisterControls(container) {
     confirmBtn.addEventListener('click', async () => {
         const selectedCheckboxes = document.querySelectorAll('.task-checkbox:checked');
         if (selectedCheckboxes.length === 0) return;
+        
+        // ボタンを無効化して連打防止
+        confirmBtn.disabled = true;
+        cancelBtn.disabled = true;
+        
         const tasksToRegister = [];
         selectedCheckboxes.forEach(checkbox => {
             const taskId = checkbox.dataset.taskId;
@@ -528,10 +549,48 @@ function setupBulkRegisterControls(container) {
             if (task) tasksToRegister.push(task);
         });
 
-        for (const task of tasksToRegister) {
-            await registerEventToCalendar(task);
+        const totalCount = tasksToRegister.length;
+        let successCount = 0;
+        let failedCount = 0;
+        
+        // 進捗表示用のテキストを更新
+        const originalText = confirmBtn.textContent;
+        confirmBtn.textContent = `登録中... 0/${totalCount}`;
+        
+        // 並列処理で高速化（5件ずつ同時処理）
+        const batchSize = 5;
+        for (let i = 0; i < tasksToRegister.length; i += batchSize) {
+            const batch = tasksToRegister.slice(i, i + batchSize);
+            const results = await Promise.allSettled(
+                batch.map(task => registerEventToCalendar(task))
+            );
+            
+            // 結果を集計
+            results.forEach(result => {
+                if (result.status === 'fulfilled') {
+                    successCount++;
+                } else {
+                    failedCount++;
+                    console.error('登録失敗:', result.reason);
+                }
+            });
+            
+            // 進捗を更新
+            confirmBtn.textContent = `登録中... ${successCount + failedCount}/${totalCount}`;
         }
-        alert(`${tasksToRegister.length}件の課題をカレンダーに登録しました。`);
+        
+        // 完了メッセージ
+        let message = `${successCount}件の課題をカレンダーに登録しました。`;
+        if (failedCount > 0) {
+            message += `\n（${failedCount}件は登録に失敗しました）`;
+        }
+        alert(message);
+        
+        // ボタンを元に戻す
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+        
         cancelBtn.click();
     });
 
