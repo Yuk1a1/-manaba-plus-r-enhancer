@@ -173,7 +173,48 @@ function testAddTask() {
   const result = doPost(testData);
   Logger.log(result.getContent());
 }
+
+/**
+ * タスクリスト一覧を取得する（IDを確認するため）
+ * GASエディタで実行すると、ログにリスト名とIDが表示されます
+ */
+function getTaskLists() {
+  const taskLists = Tasks.Tasklists.list();
+
+  if (taskLists.items) {
+    Logger.log("=== タスクリスト一覧 ===");
+    taskLists.items.forEach((list) => {
+      Logger.log(`リスト名: ${list.title} | ID: ${list.id}`);
+    });
+  } else {
+    Logger.log("タスクリストが見つかりません");
+  }
+}
 ```
+
+### タスクリスト ID の取得方法（カスタムリストを使う場合）
+
+デフォルトのリスト（「マイタスク」）ではなく、「学校課題」などのカスタムリストに登録したい場合は、そのリストの ID を取得する必要があります。
+
+#### 手順
+
+1. 上記の GAS コードをプロジェクトに貼り付け
+2. 関数のドロップダウンから **`getTaskLists`** を選択
+3. **▶ 実行** ボタンをクリック
+4. **「表示」→「ログ」** または **「実行ログ」** を開く
+5. 以下のような形式でリスト一覧が表示されます：
+
+```
+=== タスクリスト一覧 ===
+リスト名: マイタスク | ID: MDIzNDU2Nzg5MDEy...
+リスト名: 学校課題 | ID: QWJjZGVmZ2hpamts...  ← これをコピー！
+リスト名: 買い物 | ID: WFlaYWJjZGVmZ2hp...
+```
+
+6. 使いたいリストの **ID** をコピー
+7. 拡張機能の設定画面で **「タスクリスト ID」** に貼り付け
+
+> 💡 **ヒント**: `@default` を入力するとデフォルトのリスト（通常は「マイタスク」）に登録されます。
 
 ### 4. ウェブアプリとしてデプロイ
 
