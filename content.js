@@ -158,38 +158,90 @@ function displayTasks(tasks, container) {
         contentArea.appendChild(typeSpan);
         contentArea.appendChild(detailsDiv);
 
-        const calendarIcon = document.createElement('div');
-        calendarIcon.className = 'calendar-icon';
-        calendarIcon.title = 'Googleカレンダーに登録';
-        if (!task.deadlineDate) {
-            calendarIcon.style.opacity = '0.2';
-            calendarIcon.style.cursor = 'not-allowed';
-            calendarIcon.title = '締切日時がないため登録できません';
-        } else {
-            let isRegistering = false; // 登録中フラグ
-            calendarIcon.addEventListener('click', async () => {
-                if (isRegistering) return; // 登録中は無視
-                
-                if (isAuthenticated) {
-                    isRegistering = true;
-                    calendarIcon.style.opacity = '0.5';
-                    calendarIcon.style.cursor = 'wait';
+        // アイコンコンテナを作成
+        const iconsContainer = document.createElement('div');
+        iconsContainer.className = 'service-icons-container';
+
+        // Googleカレンダーアイコン
+        if (serviceSettings.useCalendar) {
+            const calendarIcon = document.createElement('div');
+            calendarIcon.className = 'service-icon calendar-icon';
+            calendarIcon.title = 'Googleカレンダーに登録';
+            calendarIcon.innerHTML = '📅';
+            
+            if (!task.deadlineDate) {
+                calendarIcon.style.opacity = '0.2';
+                calendarIcon.style.cursor = 'not-allowed';
+                calendarIcon.title = '締切日時がないため登録できません';
+            } else {
+                let isRegistering = false;
+                calendarIcon.addEventListener('click', async () => {
+                    if (isRegistering) return;
                     
-                    try {
-                        await registerEventToCalendar(task);
-                        alert('カレンダーに登録しました！');
-                    } catch (error) {
-                        alert(`カレンダー登録に失敗しました: ${error.message}`);
-                    } finally {
-                        isRegistering = false;
-                        calendarIcon.style.opacity = '1';
-                        calendarIcon.style.cursor = 'pointer';
+                    if (isAuthenticated) {
+                        isRegistering = true;
+                        calendarIcon.style.opacity = '0.5';
+                        calendarIcon.style.cursor = 'wait';
+                        
+                        try {
+                            await registerTaskToService(task, 'calendar');
+                            calendarIcon.classList.add('registered');
+                            alert('カレンダーに登録しました！');
+                        } catch (error) {
+                            alert(`カレンダー登録に失敗しました: ${error.message}`);
+                        } finally {
+                            isRegistering = false;
+                            calendarIcon.style.opacity = '1';
+                            calendarIcon.style.cursor = 'pointer';
+                        }
+                    } else {
+                        alert('先に設定を行ってください。');
+                        chrome.runtime.openOptionsPage();
                     }
-                } else {
-                    alert('先にカレンダー設定を行ってください。');
-                    chrome.runtime.openOptionsPage();
-                }
-            });
+                });
+            }
+            iconsContainer.appendChild(calendarIcon);
+        }
+
+        // Google Todoアイコン
+        if (serviceSettings.useTodo) {
+            const todoIcon = document.createElement('div');
+            todoIcon.className = 'service-icon todo-icon';
+            todoIcon.title = 'Google Todoに登録';
+            todoIcon.innerHTML = '✅';
+            
+            if (!task.deadlineDate) {
+                todoIcon.style.opacity = '0.2';
+                todoIcon.style.cursor = 'not-allowed';
+                todoIcon.title = '締切日時がないため登録できません';
+            } else {
+                let isRegistering = false;
+                todoIcon.addEventListener('click', async () => {
+                    if (isRegistering) return;
+                    
+                    if (isAuthenticated) {
+                        isRegistering = true;
+                        todoIcon.style.opacity = '0.5';
+                        todoIcon.style.cursor = 'wait';
+                        
+                        try {
+                            await registerTaskToService(task, 'todo');
+                            todoIcon.classList.add('registered');
+                            alert('Todoに登録しました！');
+                        } catch (error) {
+                            alert(`Todo登録に失敗しました: ${error.message}`);
+                        } finally {
+                            isRegistering = false;
+                            todoIcon.style.opacity = '1';
+                            todoIcon.style.cursor = 'pointer';
+                        }
+                    } else {
+                        alert('先に設定を行ってください。');
+                        chrome.runtime.openOptionsPage();
+                    }
+                });
+            }
+            iconsContainer.appendChild(todoIcon);
         }
 
         const hideButton = document.createElement('button');
@@ -203,7 +255,7 @@ function displayTasks(tasks, container) {
         
         listItem.appendChild(checkbox);
         listItem.appendChild(contentArea);
-        listItem.appendChild(calendarIcon);
+        listItem.appendChild(iconsContainer);
         listItem.appendChild(hideButton);
 
         list.appendChild(listItem);
@@ -216,46 +268,56 @@ function displayTasks(tasks, container) {
     container.appendChild(list);
 }
 
-async function registerEventToCalendar(task) {
-    // 設定からGAS URLとカレンダーIDを取得
-    const settings = await chrome.storage.sync.get(['gasUrl', 'calendarId']);
+/**
+ * 指定されたサービスにタスクを登録する
+ * @param {object} task - 登録する課題
+ * @param {string} targetService - 'calendar' または 'todo'
+ */
+async function registerTaskToService(task, targetService) {
+    const settings = await chrome.storage.sync.get(['gasUrl', 'calendarId', 'taskListId']);
     
     if (!settings.gasUrl) {
         throw new Error('GAS URLが設定されていません');
     }
 
-    const icon = document.querySelector(`li[data-task-id="${CSS.escape(task.id)}"] .calendar-icon`);
+    const iconClass = targetService === 'calendar' ? '.calendar-icon' : '.todo-icon';
+    const icon = document.querySelector(`li[data-task-id="${CSS.escape(task.id)}"] ${iconClass}`);
     
     try {
-        // GASにPOSTリクエストを送信
-        const response = await fetch(settings.gasUrl, {
+        const requestBody = {
+            targetService: targetService,
+            title: task.title,
+            taskType: task.taskType,
+            deadlineDate: task.deadlineDate.toISOString(),
+            description: `${task.courseName}\nmanaba+Rの課題です。`,
+            link: task.link
+        };
+
+        // サービス固有のIDを追加
+        if (targetService === 'calendar') {
+            requestBody.calendarId = settings.calendarId || 'primary';
+        } else if (targetService === 'todo') {
+            requestBody.taskListId = settings.taskListId || '@default';
+        }
+
+        await fetch(settings.gasUrl, {
             method: 'POST',
-            mode: 'no-cors', // GASはCORSヘッダーを返さないため
+            mode: 'no-cors',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                calendarId: settings.calendarId || 'primary',
-                title: task.title,
-                taskType: task.taskType,
-                deadlineDate: task.deadlineDate.toISOString(),
-                description: `${task.courseName}\nmanaba+Rの課題です。`,
-                link: task.link
-            })
+            body: JSON.stringify(requestBody)
         });
 
-        // 少し待機してGASの処理が完了するのを待つ
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // no-corsモードではレスポンスの詳細が取得できないため、
-        // エラーが発生しなければ成功とみなす
-        console.log('イベント登録リクエスト送信完了:', task.title);
+        console.log(`${targetService}登録リクエスト送信完了:`, task.title);
         if (icon) icon.classList.add('registered');
         
-        return { success: true, task: task.title };
+        return { success: true, task: task.title, service: targetService };
         
     } catch (error) {
-        console.error('カレンダー登録エラー:', task.title, error);
+        console.error(`${targetService}登録エラー:`, task.title, error);
         throw new Error(`${task.title}: ${error.message}`);
     }
 }
@@ -438,10 +500,14 @@ function createCalendarPopups(tasks) {
     return popups;
 }
 
-// グローバル変数として非表示タスクIDのリストを保持
+// グローバル変数
 let hiddenTasks = [];
 let isAuthenticated = false;
 let allTasks = [];
+let serviceSettings = {
+    useCalendar: true,
+    useTodo: false
+};
 
 /**
  * 課題取得から表示までの一連の処理
@@ -481,14 +547,14 @@ function updateUIBasedOnAuth(kadaiContainer) {
 }
 
 /**
- * カレンダー設定ボタンをセットアップする
+ * 設定ボタンをセットアップする
  * @param {HTMLElement} container - ボタンを追加するコンテナ
  */
 function setupAuthButton(container) {
     const authButton = document.createElement('button');
     authButton.id = 'auth-btn';
     authButton.className = 'kadai-box-btn';
-    authButton.textContent = '⚙️ カレンダー設定';
+    authButton.textContent = '⚙️ 連携設定';
     authButton.addEventListener('click', () => {
         chrome.runtime.openOptionsPage();
     });
@@ -504,7 +570,18 @@ function setupBulkRegisterControls(container) {
     const bulkRegisterBtn = document.createElement('button');
     bulkRegisterBtn.id = 'bulk-register-btn';
     bulkRegisterBtn.className = 'kadai-box-btn';
-    bulkRegisterBtn.textContent = 'カレンダーに一括登録';
+    
+    // ボタンテキストをサービス設定に応じて変更
+    let buttonLabel = '一括登録';
+    if (serviceSettings.useCalendar && serviceSettings.useTodo) {
+        buttonLabel = 'Calendar & Todoに一括登録';
+    } else if (serviceSettings.useCalendar) {
+        buttonLabel = 'カレンダーに一括登録';
+    } else if (serviceSettings.useTodo) {
+        buttonLabel = 'Todoに一括登録';
+    }
+    bulkRegisterBtn.textContent = buttonLabel;
+    
     const confirmBtn = document.createElement('button');
     confirmBtn.id = 'bulk-register-confirm-btn';
     confirmBtn.className = 'kadai-box-btn';
@@ -549,44 +626,51 @@ function setupBulkRegisterControls(container) {
             if (task) tasksToRegister.push(task);
         });
 
-        const totalCount = tasksToRegister.length;
+        // 登録対象のサービスを取得
+        const servicesToRegister = [];
+        if (serviceSettings.useCalendar) servicesToRegister.push('calendar');
+        if (serviceSettings.useTodo) servicesToRegister.push('todo');
+
+        const totalOperations = tasksToRegister.length * servicesToRegister.length;
         let successCount = 0;
         let failedCount = 0;
         
-        // 進捗表示用のテキストを更新
         const originalText = confirmBtn.textContent;
-        confirmBtn.textContent = `登録中... 0/${totalCount}`;
+        confirmBtn.textContent = `登録中... 0/${totalOperations}`;
         
-        // 並列処理で高速化（5件ずつ同時処理）
+        // 各サービスに対して登録
         const batchSize = 5;
-        for (let i = 0; i < tasksToRegister.length; i += batchSize) {
-            const batch = tasksToRegister.slice(i, i + batchSize);
-            const results = await Promise.allSettled(
-                batch.map(task => registerEventToCalendar(task))
-            );
-            
-            // 結果を集計
-            results.forEach(result => {
-                if (result.status === 'fulfilled') {
-                    successCount++;
-                } else {
-                    failedCount++;
-                    console.error('登録失敗:', result.reason);
-                }
-            });
-            
-            // 進捗を更新
-            confirmBtn.textContent = `登録中... ${successCount + failedCount}/${totalCount}`;
+        for (const service of servicesToRegister) {
+            for (let i = 0; i < tasksToRegister.length; i += batchSize) {
+                const batch = tasksToRegister.slice(i, i + batchSize);
+                const results = await Promise.allSettled(
+                    batch.map(task => registerTaskToService(task, service))
+                );
+                
+                results.forEach(result => {
+                    if (result.status === 'fulfilled') {
+                        successCount++;
+                    } else {
+                        failedCount++;
+                        console.error('登録失敗:', result.reason);
+                    }
+                });
+                
+                confirmBtn.textContent = `登録中... ${successCount + failedCount}/${totalOperations}`;
+            }
         }
         
         // 完了メッセージ
-        let message = `${successCount}件の課題をカレンダーに登録しました。`;
+        let serviceNames = [];
+        if (serviceSettings.useCalendar) serviceNames.push('カレンダー');
+        if (serviceSettings.useTodo) serviceNames.push('Todo');
+        
+        let message = `${tasksToRegister.length}件の課題を${serviceNames.join('と')}に登録しました。`;
         if (failedCount > 0) {
             message += `\n（${failedCount}件は登録に失敗しました）`;
         }
         alert(message);
         
-        // ボタンを元に戻す
         confirmBtn.disabled = false;
         cancelBtn.disabled = false;
         confirmBtn.textContent = originalText;
@@ -613,9 +697,13 @@ function setupBulkRegisterControls(container) {
 async function initialize() {
     if (document.body.classList.contains('layout-initialized')) return;
     
-    // GAS URLの設定チェック
-    const settings = await chrome.storage.sync.get(['gasUrl']);
+    // 設定を取得
+    const settings = await chrome.storage.sync.get(['gasUrl', 'useCalendar', 'useTodo']);
     isAuthenticated = !!settings.gasUrl;
+    
+    // サービス設定を更新（デフォルトはCalendarのみ）
+    serviceSettings.useCalendar = settings.useCalendar !== false;
+    serviceSettings.useTodo = settings.useTodo === true;
     
     document.body.classList.add('layout-initialized');
     document.body.classList.add('custom-layout');

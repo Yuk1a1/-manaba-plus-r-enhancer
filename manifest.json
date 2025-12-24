@@ -1,12 +1,9 @@
 {
   "manifest_version": 3,
   "name": "manaba+R Enhancer",
-  "version": "3.3.0",
-  "description": "manaba+Rのホーム画面に未提出課題一覧とカレンダーを追加します。",
-  "permissions": [
-    "storage",
-    "downloads"
-  ],
+  "version": "3.4.0",
+  "description": "manaba+Rのホーム画面に未提出課題一覧とカレンダーを追加し、GoogleカレンダーやTodoへの登録ができます。",
+  "permissions": ["storage", "downloads"],
   "host_permissions": [
     "https://ct.ritsumei.ac.jp/*",
     "https://script.google.com/*"
@@ -21,14 +18,8 @@
         "https://ct.ritsumei.ac.jp/ct/course*",
         "https://ct.ritsumei.ac.jp/ct/page*"
       ],
-      "css": [
-        "style.css",
-        "vanilla-calendar.css"
-      ],
-      "js": [
-        "vanilla-calendar.js",
-        "content.js"
-      ]
+      "css": ["style.css", "vanilla-calendar.css"],
+      "js": ["vanilla-calendar.js", "content.js"]
     }
   ],
   "options_page": "options.html"
